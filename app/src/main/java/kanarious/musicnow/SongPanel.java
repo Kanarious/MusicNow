@@ -1,13 +1,10 @@
 package kanarious.musicnow;
 
 import android.app.DownloadManager;
-import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.transition.Transition;
-import android.transition.TransitionInflater;
-import android.transition.TransitionManager;
-import android.util.Log;
+import android.content.IntentFilter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CheckBox;
@@ -16,6 +13,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import com.example.messagesutil.UIMessages;
 
 public abstract class SongPanel {
     private Context mContext;
@@ -29,7 +27,8 @@ public abstract class SongPanel {
     private ProgressBar loadBar;
     private ImageView albumView;
     private YTFile ytFile;
-    private YTDL ytdl;
+//    private YTDL ytdl;
+    private BroadcastReceiver updates;
 
     private enum ButtonStates{
         DOWNLOAD,
@@ -43,7 +42,7 @@ public abstract class SongPanel {
     private int ID;
     protected abstract void closePanel(SongPanel songPanel);
 
-    public SongPanel(Context context, int id, YTFile file, DownloadManager downloadManager){
+    public SongPanel(Context context, int id, YTFile file){
         mContext = context;
         ytFile = file;
         ID = id;
@@ -60,32 +59,60 @@ public abstract class SongPanel {
         albumView = view.findViewById(R.id.AlbumView);
         closePanelBTN = view.findViewById(R.id.ClosePanelBTN);
 
-        //Create YTDL
-        ytdl = new YTDL(mContext, downloadManager) {
+        //Create Broadcast Receiver
+        updates = new BroadcastReceiver() {
             @Override
-            protected void onDownloadFail() {
-                setButtonState(ButtonStates.RETRY);
-                NotificationCreator.notifyFailed(ID,ytFile.getTitle(),"Download Failed");
-            }
-
-            @Override
-            protected void onDownloadStart() {
-                setButtonState(ButtonStates.CANCEL);
-                NotificationCreator.notifyDownload(ID,ytFile.getTitle(),"Downloading");
-            }
-
-            @Override
-            protected void onDownloadCanceled() {
-                setButtonState(ButtonStates.RETRY);
-                NotificationCreator.notifyCancel(ID,ytFile.getTitle(),"Download Cancelled");
-            }
-
-            @Override
-            protected void onDownloadFinish() {
-                setButtonState(ButtonStates.DONE);
-                NotificationCreator.notifyFinished(ID,ytFile.getTitle(),"Download Finished");
+            public void onReceive(Context context, Intent intent) {
+                int id = intent.getIntExtra(PanelUpdates.PANEL_ID,PanelUpdates.ERROR.getValue());
+                if(!(ID == id)){
+                    return;
+                }
+                int update_code = intent.getIntExtra(PanelUpdates.PANEL_UPDATE,PanelUpdates.ERROR.getValue());
+                if(update_code == PanelUpdates.START.getValue()){
+                    setButtonState(ButtonStates.CANCEL);
+                }
+                else if (update_code == PanelUpdates.CANCEL.getValue()){
+                    setButtonState(ButtonStates.RETRY);
+                }
+                else if (update_code == PanelUpdates.FAIL.getValue()){
+                    setButtonState(ButtonStates.RETRY);
+                    UIMessages.showToast(mContext,"Failed to download");
+                }
+                else if (update_code == PanelUpdates.FINISH.getValue()){
+                    setButtonState(ButtonStates.DONE);
+                    UIMessages.showToast(mContext,"DOWNLOAD FINISHED");
+                }
             }
         };
+        mContext.registerReceiver(updates,new IntentFilter(PanelUpdates.PANEL_UPDATE));
+
+
+//        //Create YTDL
+//        ytdl = new YTDL(mContext, downloadManager) {
+//            @Override
+//            protected void onDownloadFail() {
+//                setButtonState(ButtonStates.RETRY);
+//                NotificationCreator.notifyFailed(ID,ytFile.getTitle(),"Download Failed");
+//            }
+//
+//            @Override
+//            protected void onDownloadStart() {
+//                setButtonState(ButtonStates.CANCEL);
+//                NotificationCreator.notifyDownload(ID,ytFile.getTitle(),"Downloading");
+//            }
+//
+//            @Override
+//            protected void onDownloadCanceled() {
+//                setButtonState(ButtonStates.RETRY);
+//                NotificationCreator.notifyCancel(ID,ytFile.getTitle(),"Download Cancelled");
+//            }
+//
+//            @Override
+//            protected void onDownloadFinish() {
+//                setButtonState(ButtonStates.DONE);
+//                NotificationCreator.notifyFinished(ID,ytFile.getTitle(),"Download Finished");
+//            }
+//        };
 
         //Initialize GUI Elements
         setButtonState(ButtonStates.DOWNLOAD);
@@ -104,13 +131,14 @@ public abstract class SongPanel {
                 case DONE: {
                     setButtonState(ButtonStates.LOAD);
                     prepYTFile();
-                    ytdl.download(ytFile);
-//                    startService(ytFile);
+//                    ytdl.download(ytFile);
+                    startService(ytFile);
                     break;
                 }
                 case CANCEL:{
                     setButtonState(ButtonStates.LOAD);
-                    ytdl.cancelDownload(ytFile);
+//                    ytdl.cancelDownload(ytFile);
+                    stopService();
                     break;
                 }
                 default: break;
@@ -133,6 +161,10 @@ public abstract class SongPanel {
         });
 
         new displayImageTask(albumView).execute(file.getImageURL());
+    }
+
+    public void destroy(){
+        mContext.unregisterReceiver(updates);
     }
 
     private void prepYTFile(){
@@ -244,7 +276,18 @@ public abstract class SongPanel {
     private void startService(YTFile ytFile){
         Intent serviceIntent = new Intent(mContext,DownloadService.class);
         serviceIntent.putExtra(Intent.EXTRA_TEXT,ytFile.toString());
+        serviceIntent.putExtra(Intent.EXTRA_COMPONENT_NAME,this.ID);
         mContext.startService(serviceIntent);
+//        ContextCompat.startForegroundService(mContext,serviceIntent);
     }
+
+    private void stopService(){
+        Intent intent = new Intent(DownloadService.DOWNLOAD_SERVICE);
+        intent.putExtra(DownloadService.DOWNLOAD_SERVICE,DownloadService.ACTION_STOP);
+        intent.putExtra(DownloadService.THREAD_ID,this.ID);
+        mContext.sendBroadcast(intent);
+    }
+
+
 
 }

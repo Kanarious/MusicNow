@@ -10,7 +10,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
-import android.widget.ImageView;
 
 public abstract class ImageDownloader {
     private final String TAG = "ImageDownloader";

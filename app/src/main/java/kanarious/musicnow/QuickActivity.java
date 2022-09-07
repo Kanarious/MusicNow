@@ -2,23 +2,11 @@ package kanarious.musicnow;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
 
-import android.Manifest;
-import android.app.AlertDialog;
 import android.app.DownloadManager;
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.transition.Transition;
 import android.transition.TransitionInflater;
 import android.transition.TransitionManager;
@@ -28,7 +16,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 
 import com.example.messagesutil.UIMessages;
 
@@ -123,7 +110,12 @@ public class QuickActivity extends AppCompatActivity {
                     @Override
                     protected void postProcess() {
                         if(!ytFile.isInvalid()) {
-                            addNewSongPanel(ytFile);
+                            if(!ytFile.isEmpty()) {
+                                addNewSongPanel(ytFile);
+                            }
+                            else{
+                                UIMessages.showToast(mContext,"Couldn't Find mp3 Data, try again");
+                            }
                         }
                         else{
                             UIMessages.showToast(mContext,"INVALID URL");
@@ -138,7 +130,8 @@ public class QuickActivity extends AppCompatActivity {
     protected void onDestroy() {
         //Destroy all notifications
         for(SongPanel songPanel:panels){
-            songPanel.destroyNotification();
+            songPanel.destroy();
+//            songPanel.destroyNotification();
         }
         super.onDestroy();
     }
@@ -147,7 +140,7 @@ public class QuickActivity extends AppCompatActivity {
         //Get new ID
         int id = IdTracker.getID();
         //Create Panel
-        SongPanel songPanel = new SongPanel(mContext, id, ytFile, downloadManager) {
+        SongPanel songPanel = new SongPanel(mContext, id, ytFile) {
             @Override
             protected void closePanel(SongPanel songPanel) {
                 if(panels.contains(songPanel)){

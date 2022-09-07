@@ -25,7 +25,7 @@ public abstract class YTFile {
     private String title = "";
     private String artist = "";
     private String dlurl = "";
-    private long dlid = -1;
+    private long dlid = -1L;
     private String imageURL = "";
     private String location = "";
     private boolean extraction_status = false;
@@ -33,11 +33,12 @@ public abstract class YTFile {
     private boolean embedArtist = false;
     private final boolean invalid;
     private final boolean isCopy;
+    private boolean isEmpty = false;
 
     private static final String TITLE_KEY = "title";
     private static final String ARTIST_KEY = "artist";
     private static final String DL_URL_KEY = "dlurl";
-    private static final String DL_ID_KEY = "dlid";
+//    private static final String DL_ID_KEY = "dlid";
     private static final String IMAGE_URL_KEY = "imageURL";
     private static final String LOCATION_KEY = "location";
     private static final String EXTRACTION_STATUS_KEY = "extraction_status";
@@ -66,7 +67,7 @@ public abstract class YTFile {
         this.title = (String) json.get(TITLE_KEY);
         this.artist = (String) json.get(ARTIST_KEY);
         this.dlurl = (String) json.get(DL_URL_KEY);
-        this.dlid = (long) json.get(DL_ID_KEY);
+//        this.dlid = (long) json.get(DL_ID_KEY);
         this.imageURL = (String) json.get(IMAGE_URL_KEY);
         this.location = (String) json.get(LOCATION_KEY);
         this.extraction_status = (boolean) json.get(EXTRACTION_STATUS_KEY);
@@ -93,6 +94,7 @@ public abstract class YTFile {
     public boolean isExtracted(){return this.extraction_status;}
     public boolean isInvalid() { return invalid; }
     public boolean isUrlEmpty(){ return (dlurl == null) || (dlurl.isEmpty()); }
+    public boolean isEmpty(){return this.isEmpty; }
 
     protected abstract void postProcess();
 
@@ -125,6 +127,7 @@ public abstract class YTFile {
                         //Check if received extracted files
                         if (ytFiles == null) {
                             Log.w(TAG, "onExtractionComplete: ytFiles are empty");
+                            isEmpty = true;
                             return;
                         }
                         //Search for valid video meta data
@@ -201,7 +204,7 @@ public abstract class YTFile {
             json.put(TITLE_KEY,this.title);
             json.put(ARTIST_KEY,this.artist);
             json.put(DL_URL_KEY,this.dlurl);
-            json.put(DL_ID_KEY,this.dlid);
+//            json.put(DL_ID_KEY,this.dlid);
             json.put(IMAGE_URL_KEY,this.imageURL);
             json.put(LOCATION_KEY,this.location);
             json.put(EXTRACTION_STATUS_KEY,this.extraction_status);

@@ -48,29 +48,6 @@ public abstract class YTDL {
         this.downloadManager = downloadManager;
     }
 
-//    @Override
-//    protected void onHandleIntent(@Nullable Intent intent) {
-//        //Create YTFile from already extracted file using json text & download
-//        try {
-//            Log.d(TAG, "onHandleIntent: ENTERED");
-//            ytFile = new YTFile(mContext, new JSONObject(intent.getStringExtra(Intent.EXTRA_TEXT))) {
-//                @Override
-//                protected void postProcess() {
-//                    if(ytFile != null) {
-//                        download(ytFile);
-//                    }
-//                    else{
-//                        Log.e(TAG, "onHandleIntent(): YTFile is NULL");
-//                    }
-//                }
-//            };
-//            int ID = 1;//intent.getIntExtra(Intent.EXTRA_);
-//            startForeground(ID,NotificationCreator.createDownloadNotification(mContext,ytFile.getTitle(),"Downloading"));
-//        }catch (Exception e){
-//            Log.e(TAG, "onHandleIntent(): ", e);
-//        }
-//    }
-
     public boolean download(YTFile ytFile){
         //Check for assigned download manager
         if (this.downloadManager == null){

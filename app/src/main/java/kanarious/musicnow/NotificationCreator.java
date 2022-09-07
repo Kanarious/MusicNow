@@ -48,6 +48,37 @@ public class NotificationCreator {
         return notifyPendingIntent;
     }
 
+    public static Notification createDownloadProgressNotification(String title, String description, int progress){
+        if(notificationManager == null){
+            Log.e(TAG, "createDownloadProgressNotification: Notification Manager is not Created");
+            return null;
+        }
+        Notification notification = new Notification.Builder(mContext,NotificationCreator.getChannelId())
+                .setSmallIcon(R.drawable.ic_download_notification_icon) //Create animation list https://stackoverflow.com/questions/34037962/how-to-animate-the-progress-notification-icon
+                .setContentTitle(title)
+                .setContentText(description)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setContentIntent(createIntent())
+                .setColorized(true)
+                .setColor(mContext.getResources().getColor(R.color.dark_red))
+                .setProgress(100,progress,false)
+                .build();
+        return notification;
+    }
+
+    public static void notifyDownloadProgress(int id, String title, String description, int progress){
+        if(notificationManager == null){
+            Log.e(TAG, "notifyDownloadProgress: Notification Manager is not Created");
+            return;
+        }
+        try{
+            NotificationCreator.notificationManager.notify(id, createDownloadProgressNotification(title,description,progress));
+        }catch (Exception e){
+            Log.e(TAG, "notifyDownloadProgress: ", e);
+        }
+    }
+
     public static Notification createDownloadNotification(String title, String description){
         if(notificationManager == null){
             Log.e(TAG, "createDownloadNotification: Notification Manager is not Created");
@@ -61,6 +92,8 @@ public class NotificationCreator {
                 .setOnlyAlertOnce(true)
                 .setContentIntent(createIntent())
                 .setProgress(0,0,true)
+                .setColorized(true)
+                .setColor(mContext.getResources().getColor(R.color.dark_red))
                 .build();
         return notification;
     }
