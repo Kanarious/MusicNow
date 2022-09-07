@@ -97,24 +97,29 @@ public class DownloadThread extends Thread{
             sendUpdate(PanelUpdates.START);
             //Get Download Progress
             int progress = 0;
+            int new_progress=0;
             sendUpdate(PanelUpdates.PROGRESS, progress);
             boolean isDownloadFinished = false;
             boolean isDownloadSuccessful = false;
-            while (!isDownloadFinished && running) {
+            while (!isDownloadFinished) {
                 Cursor cursor = downloadManager.query(new DownloadManager.Query().setFilterById(dl_id));
                 if (cursor.moveToFirst()) {
                     @SuppressLint("Range") int downloadStatus = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
                     switch (downloadStatus) {
                         case DownloadManager.STATUS_RUNNING:
                             @SuppressLint("Range") long totalBytes = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
-                            if (totalBytes > 0) {
-                                @SuppressLint("Range") long downloadedBytes = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
-                                progress = (int) (downloadedBytes * 100 / totalBytes);
-                                sendUpdate(PanelUpdates.PROGRESS,progress);
-                            }
                             if(!running){
                                 downloadManager.remove(dl_id);
+                                sendUpdate(PanelUpdates.CANCEL);
                                 isDownloadFinished = true;
+                            }
+                            else if (totalBytes > 0) {
+                                @SuppressLint("Range") long downloadedBytes = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                                new_progress = (int) (downloadedBytes * 100 / totalBytes);
+                                if(progress != new_progress) {
+                                    progress = new_progress;
+                                    sendUpdate(PanelUpdates.PROGRESS, progress);
+                                }
                             }
                             break;
                         case DownloadManager.STATUS_SUCCESSFUL:
@@ -135,7 +140,6 @@ public class DownloadThread extends Thread{
             }
             if(!running){
                 download_finished = true;
-                sendUpdate(PanelUpdates.CANCEL);
                 return;
             }
 

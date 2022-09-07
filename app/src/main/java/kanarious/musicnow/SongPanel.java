@@ -13,6 +13,9 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import androidx.core.content.ContextCompat;
+
 import com.example.messagesutil.UIMessages;
 
 public abstract class SongPanel {
@@ -86,34 +89,6 @@ public abstract class SongPanel {
         };
         mContext.registerReceiver(updates,new IntentFilter(PanelUpdates.PANEL_UPDATE));
 
-
-//        //Create YTDL
-//        ytdl = new YTDL(mContext, downloadManager) {
-//            @Override
-//            protected void onDownloadFail() {
-//                setButtonState(ButtonStates.RETRY);
-//                NotificationCreator.notifyFailed(ID,ytFile.getTitle(),"Download Failed");
-//            }
-//
-//            @Override
-//            protected void onDownloadStart() {
-//                setButtonState(ButtonStates.CANCEL);
-//                NotificationCreator.notifyDownload(ID,ytFile.getTitle(),"Downloading");
-//            }
-//
-//            @Override
-//            protected void onDownloadCanceled() {
-//                setButtonState(ButtonStates.RETRY);
-//                NotificationCreator.notifyCancel(ID,ytFile.getTitle(),"Download Cancelled");
-//            }
-//
-//            @Override
-//            protected void onDownloadFinish() {
-//                setButtonState(ButtonStates.DONE);
-//                NotificationCreator.notifyFinished(ID,ytFile.getTitle(),"Download Finished");
-//            }
-//        };
-
         //Initialize GUI Elements
         setButtonState(ButtonStates.DOWNLOAD);
         titleEditText.setText(ytFile.getTitle(), TextView.BufferType.EDITABLE);
@@ -131,13 +106,11 @@ public abstract class SongPanel {
                 case DONE: {
                     setButtonState(ButtonStates.LOAD);
                     prepYTFile();
-//                    ytdl.download(ytFile);
                     startService(ytFile);
                     break;
                 }
                 case CANCEL:{
                     setButtonState(ButtonStates.LOAD);
-//                    ytdl.cancelDownload(ytFile);
                     stopService();
                     break;
                 }
@@ -277,13 +250,13 @@ public abstract class SongPanel {
         Intent serviceIntent = new Intent(mContext,DownloadService.class);
         serviceIntent.putExtra(Intent.EXTRA_TEXT,ytFile.toString());
         serviceIntent.putExtra(Intent.EXTRA_COMPONENT_NAME,this.ID);
-        mContext.startService(serviceIntent);
-//        ContextCompat.startForegroundService(mContext,serviceIntent);
+//        mContext.startService(serviceIntent);
+        ContextCompat.startForegroundService(mContext,serviceIntent);
     }
 
     private void stopService(){
         Intent intent = new Intent(DownloadService.DOWNLOAD_SERVICE);
-        intent.putExtra(DownloadService.DOWNLOAD_SERVICE,DownloadService.ACTION_STOP);
+        intent.putExtra(DownloadService.DOWNLOAD_SERVICE,DownloadService.ACTION_STOP_THREAD);
         intent.putExtra(DownloadService.THREAD_ID,this.ID);
         mContext.sendBroadcast(intent);
     }

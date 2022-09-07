@@ -7,6 +7,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 public class NotificationCreator {
@@ -88,8 +90,8 @@ public class NotificationCreator {
                 .setSmallIcon(R.drawable.ic_download_notification_icon) //Create animation list https://stackoverflow.com/questions/34037962/how-to-animate-the-progress-notification-icon
                 .setContentTitle(title)
                 .setContentText(description)
-                .setOngoing(true)
-                .setOnlyAlertOnce(true)
+//                .setOngoing(false)
+//                .setOnlyAlertOnce(true)
                 .setContentIntent(createIntent())
                 .setProgress(0,0,true)
                 .setColorized(true)
@@ -145,7 +147,7 @@ public class NotificationCreator {
             return null;
         }
         Notification notification = new Notification.Builder(mContext,NotificationCreator.getChannelId())
-                .setSmallIcon(R.drawable.ic_done_notification_icon) //Create Download Finished Icon
+                .setSmallIcon(R.drawable.ic_done_notification_icon)
                 .setContentTitle(title)
                 .setContentText(description)
                 .setOngoing(false)

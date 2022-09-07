@@ -40,7 +40,7 @@ public enum PanelUpdates {
                 break;
             }
             case CANCEL:{
-                handler.post(() -> NotificationCreator.notifyCancel(id,title,"Download Cancelled"));
+                handler.post(()->NotificationCreator.notifyCancel(id,title,"Download Cancelled"));
                 break;
             }
             case FAIL:{

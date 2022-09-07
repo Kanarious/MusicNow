@@ -1,12 +1,13 @@
 package kanarious.musicnow;
 
 import android.app.DownloadManager;
-import android.app.IntentService;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.util.Log;
@@ -14,7 +15,8 @@ import androidx.annotation.Nullable;
 import org.json.JSONObject;
 import java.util.ArrayList;
 
-public class DownloadService extends IntentService {
+public class DownloadService extends Service {
+
     private static final String TAG = "DownloadService";
     private PowerManager.WakeLock wakeLock;
     private Handler handler = new Handler(Looper.getMainLooper());
@@ -23,28 +25,23 @@ public class DownloadService extends IntentService {
     private DownloadManager downloadManager;
     private Context mContext;
     private BroadcastReceiver update;
+    private DownloadServiceThread main;
 
-    private ArrayList<DownloadThread> threads;
-
-    public static final String ACTION_STOP = "STOP";
+    public static final String ACTION_STOP_THREAD = "STOP_THREAD";
+    public static final String ACTION_STOP_SERVICE = "STOP_SERVICE";
     public static final String THREAD_ID = "THREAD_ID";
     public static final int THREAD_ID_ERROR = -1;
     public static final String DOWNLOAD_SERVICE = "DOWNLOAD_SERVICE";
-
-    public DownloadService() {
-        super("DownloadService");
-        setIntentRedelivery(false);
-    }
 
     @Override
     public void onCreate() {
         super.onCreate();
         mContext = this;
-        threads = new ArrayList<>();
         //Power Manager
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MusicNow.DownloadService:Wakelock");
         wakeLock.acquire();
+        Log.d(TAG, "onCreate: WakeLock Acquired");
         //Download Manager
         downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
         //Create Broadcast Receiver for Download Updates
@@ -53,30 +50,47 @@ public class DownloadService extends IntentService {
             public void onReceive(Context context, Intent intent) {
                 String input = intent.getStringExtra(DOWNLOAD_SERVICE);
                 int id = intent.getIntExtra(THREAD_ID, THREAD_ID_ERROR);
-                if(input.equals(ACTION_STOP)){
-                    for(DownloadThread thread:threads){
-                        if(thread.threadID() == id){
-                            thread.running = false;
-                        }
-                    }
+                if(input.equals(ACTION_STOP_THREAD)){
+                    main.stopThread(id);
+                }
+                if(input.equals(ACTION_STOP_SERVICE)){
+                    stopSelf();
                 }
             }
         };
         this.registerReceiver(update,new IntentFilter(DOWNLOAD_SERVICE));
-        Log.d(TAG, "onCreate: WakeLock Acquired");
+        //Main Thread
+        main = new DownloadServiceThread(handler,mContext);
+        main.start();
+
+        Log.d(TAG, "onCreate: Download Service is Created");
     }
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         //Power Manager
         wakeLock.release();
         //Broadcast Receiver
         unregisterReceiver(update);
+        //Main Thread
+        main.running = false;
+        Log.d(TAG, "onDestroy: Download Service is Destoryed");
+        super.onDestroy();
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 
     @Override
-    protected void onHandleIntent(@Nullable Intent intent) {
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        onHandleIntent(intent);
+        return START_NOT_STICKY;
+    }
+
+    protected void onHandleIntent(Intent intent) {
         //Get JSON Input
         String input = intent.getStringExtra(Intent.EXTRA_TEXT);
         //Get Respected Panel ID
@@ -93,28 +107,14 @@ public class DownloadService extends IntentService {
             download_title = ytFile.getTitle();
 
             //Post Start
-            startForeground(id,NotificationCreator.createDownloadNotification(ytFile.getTitle(),"Downloading"));
+            startForeground(id,NotificationCreator.createCanceledNotification(ytFile.getTitle(),"Downloading"));
 
             //Start Download
             DownloadThread downloadThread = new DownloadThread(downloadManager, handler, mContext, ytFile, id);
-            threads.add(downloadThread);
+            main.addThread(downloadThread);
             downloadThread.start();
+            main.startService();
 
-            //Keep Service Alive while Downloads are in progress
-            while(threads.size() > 0){
-                for(DownloadThread thread:threads){
-                    //Check if Thread is still running
-                    if(!thread.isAlive()){
-                        //Check if Thread finished task properly
-                        if(!thread.downloadFinished()){
-                            //Notify Task Failed
-                            PanelUpdates.sendUpdate(PanelUpdates.FAIL,handler,mContext,thread.getTitle(),thread.threadID());
-                        }
-                        //Remove Thread from live list
-                        threads.remove(thread);
-                    }
-                }
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }
