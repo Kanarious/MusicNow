@@ -90,8 +90,8 @@ public class NotificationCreator {
                 .setSmallIcon(R.drawable.ic_download_notification_icon) //Create animation list https://stackoverflow.com/questions/34037962/how-to-animate-the-progress-notification-icon
                 .setContentTitle(title)
                 .setContentText(description)
-//                .setOngoing(false)
-//                .setOnlyAlertOnce(true)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
                 .setContentIntent(createIntent())
                 .setProgress(0,0,true)
                 .setColorized(true)

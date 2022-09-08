@@ -1,10 +1,15 @@
 package kanarious.musicnow;
 
 import android.app.DownloadManager;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.PersistableBundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CheckBox;
@@ -19,6 +24,7 @@ import androidx.core.content.ContextCompat;
 import com.example.messagesutil.UIMessages;
 
 public abstract class SongPanel {
+    private final String TAG;
     private Context mContext;
     private View view;
     private CheckBox artistCheckBox;
@@ -46,6 +52,7 @@ public abstract class SongPanel {
     protected abstract void closePanel(SongPanel songPanel);
 
     public SongPanel(Context context, int id, YTFile file){
+        TAG = "SongPanel"+id;
         mContext = context;
         ytFile = file;
         ID = id;
@@ -247,18 +254,34 @@ public abstract class SongPanel {
     }
 
     private void startService(YTFile ytFile){
-        Intent serviceIntent = new Intent(mContext,DownloadService.class);
-        serviceIntent.putExtra(Intent.EXTRA_TEXT,ytFile.toString());
-        serviceIntent.putExtra(Intent.EXTRA_COMPONENT_NAME,this.ID);
-//        mContext.startService(serviceIntent);
-        ContextCompat.startForegroundService(mContext,serviceIntent);
+//        Intent serviceIntent = new Intent(mContext,DownloadService.class);
+//        serviceIntent.putExtra(Intent.EXTRA_TEXT,ytFile.toString());
+//        serviceIntent.putExtra(Intent.EXTRA_COMPONENT_NAME,this.ID);
+////        mContext.startService(serviceIntent);
+//        ContextCompat.startForegroundService(mContext,serviceIntent);
+
+        Intent intent = new Intent(DownloadScheduler.DOWNLOAD_SERVICE);
+        intent.putExtra(DownloadScheduler.DOWNLOAD_SERVICE,DownloadScheduler.ACTION_DOWNLOAD_YTFILE);
+        intent.putExtra(DownloadScheduler.YTFILE, ytFile.toString());
+        intent.putExtra(DownloadScheduler.THREAD_ID,this.ID);
+        mContext.sendBroadcast(intent);
+
     }
 
     private void stopService(){
-        Intent intent = new Intent(DownloadService.DOWNLOAD_SERVICE);
-        intent.putExtra(DownloadService.DOWNLOAD_SERVICE,DownloadService.ACTION_STOP_THREAD);
-        intent.putExtra(DownloadService.THREAD_ID,this.ID);
+//        Intent intent = new Intent(DownloadService.DOWNLOAD_SERVICE);
+//        intent.putExtra(DownloadService.DOWNLOAD_SERVICE,DownloadService.ACTION_STOP_THREAD);
+//        intent.putExtra(DownloadService.THREAD_ID,this.ID);
+//        mContext.sendBroadcast(intent);
+
+        Intent intent = new Intent(DownloadScheduler.DOWNLOAD_SERVICE);
+        intent.putExtra(DownloadScheduler.DOWNLOAD_SERVICE,DownloadScheduler.ACTION_STOP_THREAD);
+        intent.putExtra(DownloadScheduler.THREAD_ID,this.ID);
         mContext.sendBroadcast(intent);
+
+//        JobScheduler scheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+//        scheduler.cancel(this.ID);
+//        Log.d(TAG, "stopService: Job Cancelled");
     }
 
 

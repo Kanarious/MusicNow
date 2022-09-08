@@ -60,7 +60,11 @@ public class DownloadService extends Service {
         };
         this.registerReceiver(update,new IntentFilter(DOWNLOAD_SERVICE));
         //Main Thread
-        main = new DownloadServiceThread(handler,mContext);
+        main = new DownloadServiceThread(handler, mContext) {
+            @Override
+            protected void onFinish() {
+            }
+        };
         main.start();
 
         Log.d(TAG, "onCreate: Download Service is Created");

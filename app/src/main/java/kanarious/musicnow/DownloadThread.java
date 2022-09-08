@@ -2,7 +2,10 @@ package kanarious.musicnow;
 
 import android.annotation.SuppressLint;
 import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
@@ -109,6 +112,7 @@ public class DownloadThread extends Thread{
                         case DownloadManager.STATUS_RUNNING:
                             @SuppressLint("Range") long totalBytes = cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
                             if(!running){
+                                Log.d(TAG, "download: download cancelled...");
                                 downloadManager.remove(dl_id);
                                 sendUpdate(PanelUpdates.CANCEL);
                                 isDownloadFinished = true;
@@ -119,6 +123,7 @@ public class DownloadThread extends Thread{
                                 if(progress != new_progress) {
                                     progress = new_progress;
                                     sendUpdate(PanelUpdates.PROGRESS, progress);
+                                    Log.d(TAG, "download: downloading... "+progress+"%");
                                 }
                             }
                             break;

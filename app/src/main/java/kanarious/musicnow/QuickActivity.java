@@ -4,9 +4,13 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.DownloadManager;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.transition.Transition;
 import android.transition.TransitionInflater;
 import android.transition.TransitionManager;
@@ -31,6 +35,8 @@ public class QuickActivity extends AppCompatActivity {
     private ViewGroup viewGroup;
     private ArrayList<SongPanel> panels = new ArrayList<>();
 
+    private final int JOB_SERVICE_ID = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,6 +47,19 @@ public class QuickActivity extends AppCompatActivity {
         mContext = this;
         downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
         viewGroup = findViewById(R.id.MainView);
+
+        //Create Job Service
+        ComponentName componentName = new ComponentName(mContext,DownloadScheduler.class);
+        JobInfo info = new JobInfo.Builder(JOB_SERVICE_ID,componentName)
+                .build();
+        JobScheduler scheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        int resultCode = scheduler.schedule(info);
+        if(resultCode == JobScheduler.RESULT_SUCCESS){
+            Log.d(TAG, "startService: Job Scheduled");
+        }
+        else{
+            Log.e(TAG, "startService: Job Scheduling Failed");
+        }
     }
 
     @Override
@@ -128,11 +147,13 @@ public class QuickActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        //Destroy all notifications
+        //Destroy Panels
         for(SongPanel songPanel:panels){
             songPanel.destroy();
 //            songPanel.destroyNotification();
         }
+        //Unbind Service
+        stopService();
         super.onDestroy();
     }
 
@@ -171,6 +192,12 @@ public class QuickActivity extends AppCompatActivity {
         TransitionManager.beginDelayedTransition(viewGroup,t);
         //Show Panel
         viewGroup.addView(songPanelView,0);
+    }
+
+    private void stopService(){
+        Intent intent = new Intent(DownloadScheduler.DOWNLOAD_SERVICE);
+        intent.putExtra(DownloadScheduler.DOWNLOAD_SERVICE,DownloadScheduler.ACTION_STOP_SERVICE);
+        mContext.sendBroadcast(intent);
     }
 
 }

@@ -7,7 +7,7 @@ import android.os.Handler;
 import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class DownloadServiceThread extends Thread{
+public abstract class DownloadServiceThread extends Thread{
     volatile boolean running = true;
     private ArrayList<DownloadThread> threads;
     private Handler handler;
@@ -15,6 +15,8 @@ public class DownloadServiceThread extends Thread{
     private final ReentrantLock threadslock = new ReentrantLock();
     private boolean called_stop = false;
     private boolean service_started = false;
+
+    protected abstract void onFinish();
 
     DownloadServiceThread(Handler handler, Context context){
         this.handler = handler;
@@ -26,7 +28,7 @@ public class DownloadServiceThread extends Thread{
         threadslock.lock();
         try {
             threads.add(thread);
-//            thread.start();
+            thread.start();
         }
         finally {
             threadslock.unlock();
@@ -77,6 +79,20 @@ public class DownloadServiceThread extends Thread{
             }finally {
                 threadslock.unlock();
             }
+        }
+
+        //Clean Up
+        threadslock.lock();
+        try {
+            if (threads.size() > 0) {
+                for (DownloadThread thread : threads) {
+                    if (thread.isAlive()) {
+                        running = false;
+                    }
+                }
+            }
+        }finally {
+            threadslock.unlock();
         }
         super.run();
     }
