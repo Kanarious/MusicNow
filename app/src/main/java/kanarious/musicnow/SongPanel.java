@@ -12,12 +12,12 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import com.example.messagesutil.UIMessages;
 
 public abstract class SongPanel {
     private final String TAG;
     private final Context mContext;
     private final View view;
+    private final View parent;
     private final CheckBox artistCheckBox;
     private final CheckBox albumCheckBox;
     private final EditText artistEditText;
@@ -39,12 +39,13 @@ public abstract class SongPanel {
     private final int ID;
     protected abstract void closePanel(SongPanel songPanel);
 
-    public SongPanel(Context context, int id, YTFile file){
+    public SongPanel(Context context, View parent, int id, YTFile file){
         TAG = "SongPanel"+id;
         mContext = context;
         ytFile = file;
         ID = id;
-        view = LayoutInflater.from(mContext).inflate(R.layout.song_panel,null);
+        view = LayoutInflater.from(mContext).inflate(R.layout.song_panel, null);
+        this.parent = parent;
         SongPanel self = this;
 
         //Assign GUI Elements
@@ -74,11 +75,13 @@ public abstract class SongPanel {
                 }
                 else if (update_code == PanelUpdates.FAIL.getValue()){
                     setButtonState(ButtonStates.RETRY);
-                    UIMessages.showToast(mContext,"Failed to download");
+                    CustomSnackbar snackBar = new CustomSnackbar(mContext,parent,"Failed to download");
+                    snackBar.show();
                 }
                 else if (update_code == PanelUpdates.FINISH.getValue()){
                     setButtonState(ButtonStates.DONE);
-                    UIMessages.showToast(mContext,"DOWNLOAD FINISHED");
+                    CustomSnackbar snackBar = new CustomSnackbar(mContext,parent,"Download Finished");
+                    snackBar.show();
                 }
             }
         };

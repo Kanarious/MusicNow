@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/drawable/ic_retry_icon_clicked.xml" value="0.2045" />
+        <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/drawable/round_panel.xml" value="0.2045" />
+        <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/activity_quick_download.xml" value="0.15104166666666666" />
+        <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/custom_snackbar.xml" value="0.375" />
+        <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/main_bar.xml" value="0.15104166666666666" />
+        <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/song_panel.xml" value="0.15104166666666666" />
+      </map>
+    </option>
+  </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" project-jdk-name="11" project-jdk-type="JavaSDK" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK" />
 </project>

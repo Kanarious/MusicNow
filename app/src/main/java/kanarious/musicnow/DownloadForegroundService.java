@@ -91,6 +91,9 @@ public class DownloadForegroundService extends Service {
             @Override
             protected void postProcess() {
             }
+            @Override
+            protected void notifyExtraction(String message) {
+            }
         };
         DownloadThread thread = new DownloadThread((DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE),
                 new Handler(Looper.getMainLooper()),

@@ -225,6 +225,7 @@ public class NotificationCreator {
                 .setContentTitle(title)
                 .setContentText(description)
                 .setContentIntent(createIntent(context))
+                .setOnlyAlertOnce(true)
                 .setColorized(true)
                 .setColor(context.getResources().getColor(R.color.dark_red,null))
                 .build();

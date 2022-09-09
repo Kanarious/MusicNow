@@ -8,8 +8,6 @@ import android.util.SparseArray;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.example.messagesutil.UIMessages;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -47,36 +45,6 @@ public abstract class YTFile {
     private static final String EMBED_ARTIST_KEY = "embedArtist";
     private static final String INVALID_KEY = "invalid";
 
-    public YTFile(Context context, String url){
-        this.mContext = context;
-        this.isCopy = false;
-        url = processURL(url);
-        if (checkURL(url)) {
-            this.invalid = false;
-            UIMessages.showToast(mContext, "Extracting Data");
-            extractData(url);
-        }
-        else{
-            this.invalid = true;
-            UIMessages.showToast(mContext,"Invalid URL");
-            Log.e(TAG, "YTFile: Invalid URL");
-        }
-    }
-
-    public YTFile(JSONObject json) throws JSONException {
-        this.isCopy = true;
-        this.title = (String) json.get(TITLE_KEY);
-        this.artist = (String) json.get(ARTIST_KEY);
-        this.dlurl = (String) json.get(DL_URL_KEY);
-        this.imageURL = (String) json.get(IMAGE_URL_KEY);
-        this.location = (String) json.get(LOCATION_KEY);
-        this.extraction_status = (boolean) json.get(EXTRACTION_STATUS_KEY);
-        this.embedImage = (boolean) json.get(EMBED_IMAGE_KEY);
-        this.embedArtist = (boolean) json.get(EMBED_ARTIST_KEY);
-        this.invalid = (boolean) json.get(INVALID_KEY);
-    }
-
-    /** Setters/Getters **/
     public String getUrl(){ return this.dlurl; }
     public String getTitle(){ return this.title; }
     public void setTitle(String title){this.title = title; }
@@ -95,6 +63,36 @@ public abstract class YTFile {
     public boolean isEmpty(){return this.isEmpty; }
 
     protected abstract void postProcess();
+    protected abstract void notifyExtraction(String message);
+
+    public YTFile(Context context, String url){
+        this.mContext = context;
+        this.isCopy = false;
+        url = processURL(url);
+        if (checkURL(url)) {
+            this.invalid = false;
+            notifyExtraction("Extracting Data");
+            extractData(url);
+        }
+        else{
+            this.invalid = true;
+            notifyExtraction("Invalid URL");
+            Log.e(TAG, "YTFile: Invalid URL");
+        }
+    }
+
+    public YTFile(JSONObject json) throws JSONException {
+        this.isCopy = true;
+        this.title = (String) json.get(TITLE_KEY);
+        this.artist = (String) json.get(ARTIST_KEY);
+        this.dlurl = (String) json.get(DL_URL_KEY);
+        this.imageURL = (String) json.get(IMAGE_URL_KEY);
+        this.location = (String) json.get(LOCATION_KEY);
+        this.extraction_status = (boolean) json.get(EXTRACTION_STATUS_KEY);
+        this.embedImage = (boolean) json.get(EMBED_IMAGE_KEY);
+        this.embedArtist = (boolean) json.get(EMBED_ARTIST_KEY);
+        this.invalid = (boolean) json.get(INVALID_KEY);
+    }
 
     private String processURL(String url){
         final String yt_music_link = "music.";

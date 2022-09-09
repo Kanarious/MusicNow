@@ -38,8 +38,6 @@ dependencies {
 
     //YoutubeExtractor
     implementation 'com.github.HaarigerHarald:android-youtubeExtractor:master-SNAPSHOT'
-    //MessagesUtility Library
-    implementation 'com.github.Kanarious:MessagesUtil-Android:0.2.0'
     //Mp3 ID3 tag Editor
     implementation 'com.github.mpatric:mp3agic:0.8.2'
     //FFmpeg

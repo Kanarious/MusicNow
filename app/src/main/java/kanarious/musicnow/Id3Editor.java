@@ -3,7 +3,6 @@ package kanarious.musicnow;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.util.Log;
-import com.example.messagesutil.UIMessages;
 import com.mpatric.mp3agic.ID3v2;
 import com.mpatric.mp3agic.ID3v24Tag;
 import com.mpatric.mp3agic.InvalidDataException;

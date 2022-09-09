@@ -9,6 +9,7 @@
     tools:context=".QuickActivity">
 
     <LinearLayout
+        android:id="@+id/MainLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">

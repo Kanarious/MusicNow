@@ -3,13 +3,12 @@ package kanarious.musicnow;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.DownloadManager;
-import android.app.job.JobInfo;
-import android.app.job.JobScheduler;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.transition.Transition;
@@ -22,7 +21,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.example.messagesutil.UIMessages;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 
@@ -32,7 +31,7 @@ public class QuickActivity extends AppCompatActivity {
     private YTFile ytFile;
     private Intent prev_intent = null;
     private Context mContext;
-    private ViewGroup viewGroup;
+    private ViewGroup mainView;
     private final ArrayList<SongPanel> panels = new ArrayList<>();
     private DownloadForegroundService foregroundService;
     private boolean isServiceBound = false;
@@ -59,7 +58,7 @@ public class QuickActivity extends AppCompatActivity {
         SettingsController.initializeFile(this);
         NotificationCreator.createNotificationChannel(this,this.getClass());
         mContext = this;
-        viewGroup = findViewById(R.id.MainView);
+        mainView = findViewById(R.id.MainView);
 
         //Start Service
         Intent intent = new Intent(this, DownloadForegroundService.class);
@@ -132,17 +131,17 @@ public class QuickActivity extends AppCompatActivity {
                 ytFile = new YTFile(this, intent.getStringExtra(Intent.EXTRA_TEXT)) {
                     @Override
                     protected void postProcess() {
-                        if(!ytFile.isInvalid()) {
-                            if(!ytFile.isEmpty()) {
-                                addNewSongPanel(ytFile);
-                            }
-                            else{
-                                UIMessages.showToast(mContext,"Couldn't Find mp3 Data, try again");
-                            }
+                        if(!ytFile.isEmpty()) {
+                            addNewSongPanel(ytFile);
                         }
                         else{
-                            UIMessages.showToast(mContext,"INVALID URL");
+                            showSnackBar("Couldn't Find mp3 Data, try again");
                         }
+                    }
+
+                    @Override
+                    protected void notifyExtraction(String message) {
+                        showSnackBar(message);
                     }
                 };
             }
@@ -164,14 +163,14 @@ public class QuickActivity extends AppCompatActivity {
         //Get new ID
         int id = IdTracker.getID();
         //Create Panel
-        SongPanel songPanel = new SongPanel(mContext, id, ytFile) {
+        SongPanel songPanel = new SongPanel(mContext, findViewById(R.id.MainLayout), id, ytFile) {
             @Override
             protected void closePanel(SongPanel songPanel) {
                 panels.remove(songPanel);
                 IdTracker.freeID(songPanel.getID());
                 Transition t = TransitionInflater.from(mContext).inflateTransition(R.transition.song_panel_hide);
-                TransitionManager.beginDelayedTransition(viewGroup,t);
-                viewGroup.removeView(songPanel.getView());
+                TransitionManager.beginDelayedTransition(mainView,t);
+                mainView.removeView(songPanel.getView());
             }
         };
         if(!panels.contains(songPanel)) {
@@ -190,9 +189,9 @@ public class QuickActivity extends AppCompatActivity {
         //Get View & Set Transition
         View songPanelView = songPanel.getView();
         Transition t = TransitionInflater.from(mContext).inflateTransition(R.transition.song_panel_trans);
-        TransitionManager.beginDelayedTransition(viewGroup,t);
+        TransitionManager.beginDelayedTransition(mainView,t);
         //Show Panel
-        viewGroup.addView(songPanelView,0);
+        mainView.addView(songPanelView,0);
     }
 
     private void stopService(){
@@ -201,4 +200,11 @@ public class QuickActivity extends AppCompatActivity {
         }
     }
 
+    private void showSnackBar(String message){
+        CustomSnackbar snackBar = new CustomSnackbar(mContext,findViewById(R.id.MainLayout),message);
+        if(message.equals("Extracting Data")){
+            snackBar.setProgressVisible(true);
+        }
+        snackBar.show();
+    }
 }
