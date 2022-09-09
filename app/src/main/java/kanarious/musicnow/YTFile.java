@@ -13,6 +13,8 @@ import com.example.messagesutil.UIMessages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Objects;
+
 import at.huber.youtubeExtractor.VideoMeta;
 import at.huber.youtubeExtractor.YouTubeExtractor;
 import at.huber.youtubeExtractor.YtFile;
@@ -38,7 +40,6 @@ public abstract class YTFile {
     private static final String TITLE_KEY = "title";
     private static final String ARTIST_KEY = "artist";
     private static final String DL_URL_KEY = "dlurl";
-//    private static final String DL_ID_KEY = "dlid";
     private static final String IMAGE_URL_KEY = "imageURL";
     private static final String LOCATION_KEY = "location";
     private static final String EXTRACTION_STATUS_KEY = "extraction_status";
@@ -67,7 +68,6 @@ public abstract class YTFile {
         this.title = (String) json.get(TITLE_KEY);
         this.artist = (String) json.get(ARTIST_KEY);
         this.dlurl = (String) json.get(DL_URL_KEY);
-//        this.dlid = (long) json.get(DL_ID_KEY);
         this.imageURL = (String) json.get(IMAGE_URL_KEY);
         this.location = (String) json.get(LOCATION_KEY);
         this.extraction_status = (boolean) json.get(EXTRACTION_STATUS_KEY);
@@ -91,9 +91,7 @@ public abstract class YTFile {
     public void setEmbedImage(boolean embed){this.embedImage = embed; }
     public boolean embedArtist(){return this.embedArtist; }
     public void setEmbedArtist(boolean embed){this.embedArtist = embed; }
-    public boolean isExtracted(){return this.extraction_status;}
     public boolean isInvalid() { return invalid; }
-    public boolean isUrlEmpty(){ return (dlurl == null) || (dlurl.isEmpty()); }
     public boolean isEmpty(){return this.isEmpty; }
 
     protected abstract void postProcess();
@@ -128,6 +126,7 @@ public abstract class YTFile {
                         if (ytFiles == null) {
                             Log.w(TAG, "onExtractionComplete: ytFiles are empty");
                             isEmpty = true;
+                            postProcess();
                             return;
                         }
                         //Search for valid video meta data
@@ -141,7 +140,7 @@ public abstract class YTFile {
     }
 
     private void searchMetaData(@Nullable SparseArray<YtFile> ytFiles, @Nullable VideoMeta videoMeta){
-        for (int i = 0, itag; i < ytFiles.size(); i++){
+        for (int i = 0, itag; i < Objects.requireNonNull(ytFiles).size(); i++){
             Log.d(TAG, "onExtractionComplete: Getting iTag");
             //Get Youtube File from iTag
             itag = ytFiles.keyAt(i);
@@ -192,7 +191,6 @@ public abstract class YTFile {
         }
         Log.d(TAG, "onExtractionComplete: Finished Checking itags");
         extraction_status = true;
-        /**INSERT UI UPDATE ID HERE**/// Data Extracted
         postProcess();
     }
 
@@ -204,7 +202,6 @@ public abstract class YTFile {
             json.put(TITLE_KEY,this.title);
             json.put(ARTIST_KEY,this.artist);
             json.put(DL_URL_KEY,this.dlurl);
-//            json.put(DL_ID_KEY,this.dlid);
             json.put(IMAGE_URL_KEY,this.imageURL);
             json.put(LOCATION_KEY,this.location);
             json.put(EXTRACTION_STATUS_KEY,this.extraction_status);

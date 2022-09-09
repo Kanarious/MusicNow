@@ -9,8 +9,9 @@ import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.PersistableBundle;
+import android.os.IBinder;
 import android.transition.Transition;
 import android.transition.TransitionInflater;
 import android.transition.TransitionManager;
@@ -29,13 +30,26 @@ public class QuickActivity extends AppCompatActivity {
 
     private final String TAG = "QuickActivity";
     private YTFile ytFile;
-    private DownloadManager downloadManager;
     private Intent prev_intent = null;
     private Context mContext;
     private ViewGroup viewGroup;
-    private ArrayList<SongPanel> panels = new ArrayList<>();
+    private final ArrayList<SongPanel> panels = new ArrayList<>();
+    private DownloadForegroundService foregroundService;
+    private boolean isServiceBound = false;
 
-    private final int JOB_SERVICE_ID = 1;
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            DownloadForegroundService.LocalBinder binder = (DownloadForegroundService.LocalBinder) service;
+            foregroundService = binder.getService();
+            isServiceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            isServiceBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,21 +59,11 @@ public class QuickActivity extends AppCompatActivity {
         SettingsController.initializeFile(this);
         NotificationCreator.createNotificationChannel(this,this.getClass());
         mContext = this;
-        downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
         viewGroup = findViewById(R.id.MainView);
 
-        //Create Job Service
-        ComponentName componentName = new ComponentName(mContext,DownloadScheduler.class);
-        JobInfo info = new JobInfo.Builder(JOB_SERVICE_ID,componentName)
-                .build();
-        JobScheduler scheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        int resultCode = scheduler.schedule(info);
-        if(resultCode == JobScheduler.RESULT_SUCCESS){
-            Log.d(TAG, "startService: Job Scheduled");
-        }
-        else{
-            Log.e(TAG, "startService: Job Scheduling Failed");
-        }
+        //Start Service
+        Intent intent = new Intent(this, DownloadForegroundService.class);
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE);
     }
 
     @Override
@@ -150,7 +154,6 @@ public class QuickActivity extends AppCompatActivity {
         //Destroy Panels
         for(SongPanel songPanel:panels){
             songPanel.destroy();
-//            songPanel.destroyNotification();
         }
         //Unbind Service
         stopService();
@@ -164,9 +167,7 @@ public class QuickActivity extends AppCompatActivity {
         SongPanel songPanel = new SongPanel(mContext, id, ytFile) {
             @Override
             protected void closePanel(SongPanel songPanel) {
-                if(panels.contains(songPanel)){
-                    panels.remove(songPanel);
-                }
+                panels.remove(songPanel);
                 IdTracker.freeID(songPanel.getID());
                 Transition t = TransitionInflater.from(mContext).inflateTransition(R.transition.song_panel_hide);
                 TransitionManager.beginDelayedTransition(viewGroup,t);
@@ -195,9 +196,9 @@ public class QuickActivity extends AppCompatActivity {
     }
 
     private void stopService(){
-        Intent intent = new Intent(DownloadScheduler.DOWNLOAD_SERVICE);
-        intent.putExtra(DownloadScheduler.DOWNLOAD_SERVICE,DownloadScheduler.ACTION_STOP_SERVICE);
-        mContext.sendBroadcast(intent);
+        if(isServiceBound && foregroundService != null){
+            unbindService(serviceConnection);
+        }
     }
 
 }

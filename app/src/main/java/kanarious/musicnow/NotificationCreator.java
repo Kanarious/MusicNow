@@ -6,200 +6,239 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
+
+import androidx.core.app.NotificationCompat;
 
 public class NotificationCreator {
     private static final String TAG = "NotificationCreator";
+    private static NotificationManager notificationManager = null;
+    private static NotificationManager serviceNotificationManager = null;
+    private static Class mOwner;
+
+    //Download Notification Channel
     private static final String CHANNEL_ID = "DOWNLOADS_CHANNEL";
     private static final String CHANNEL_NAME = "Active Downloads";
     private static final String CHANNEL_DESCRIPTION = "Displays active downloads that are in progress";
-    private static NotificationManager notificationManager = null;
-    private static Context mContext;
-    private static Class mOwner;
+    //Download Service Channel
+    private static final String SERVICE_CHANNEL_ID = "SERVICE_CHANNEL";
+    private static final String SERVICE_CHANNEL_NAME = "Download Service";
+    private static final String SERVICE_CHANNEL_DESCRIPTION = "Displays active download service operating in the background";
 
     public static void createNotificationChannel(Context context, Class owner) {
-        mContext = context;
         mOwner = owner;
-        // Create the NotificationChannel, but only on API 26+ because
-        // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = CHANNEL_NAME;
-            String description = CHANNEL_DESCRIPTION;
-            int importance = NotificationManager.IMPORTANCE_LOW;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
-            // Register the channel with the system; you can't change the importance
-            // or other notification behaviors after this
-            notificationManager = context.getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
+        buildDownloadChannel(context);
+        buildServiceChannel(context);
     }
 
-    private static PendingIntent createIntent(){
-        Intent notifyIntent = new Intent(mContext, mOwner);
+    private static void buildDownloadChannel(Context context){
+        //Create Channel
+        int importance = NotificationManager.IMPORTANCE_LOW;
+        NotificationChannel channel = new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance);
+        channel.setDescription(CHANNEL_DESCRIPTION);
+        //Register Channel
+        notificationManager = context.getSystemService(NotificationManager.class);
+        notificationManager.createNotificationChannel(channel);
+    }
+
+    private static void buildServiceChannel(Context context){
+        //Build Channel
+        int importance = NotificationManager.IMPORTANCE_LOW;
+        NotificationChannel channel = new NotificationChannel(SERVICE_CHANNEL_ID, SERVICE_CHANNEL_NAME, importance);
+        channel.setDescription(SERVICE_CHANNEL_DESCRIPTION);
+        //Register Channel
+        serviceNotificationManager = context.getSystemService(NotificationManager.class);
+        serviceNotificationManager.createNotificationChannel(channel);
+    }
+
+    private static PendingIntent createIntent(Context context){
+        Intent notifyIntent = new Intent(context, mOwner);
         // Set the Activity to start in a new, empty task
         notifyIntent.setFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY);
         // Create the PendingIntent
-        PendingIntent notifyPendingIntent = PendingIntent.getActivity(
-                mContext, 0, notifyIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT// | PendingIntent.FLAG_IMMUTABLE
+        return PendingIntent.getActivity(context, 0, notifyIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
-        return notifyPendingIntent;
     }
 
-    public static Notification createDownloadProgressNotification(String title, String description, int progress){
+    public static Notification createDownloadProgressNotification(Context context, int id, String title, String description, int progress){
         if(notificationManager == null){
             Log.e(TAG, "createDownloadProgressNotification: Notification Manager is not Created");
             return null;
         }
-        Notification notification = new Notification.Builder(mContext,NotificationCreator.getChannelId())
+
+        //Create Cancel Button Action
+        Intent notifyIntent = new Intent(context,ServiceReceiver.class);
+        notifyIntent.putExtra(ServiceReceiver.SERVICE_ACTION,DownloadForegroundService.ACTION_STOP_THREAD);
+        notifyIntent.putExtra(ServiceReceiver.INTENT_ID,id);
+        context.startService(notifyIntent);
+        PendingIntent intent = PendingIntent.getBroadcast(context,0,notifyIntent,PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Notification.Action action = new Notification.Action.Builder(R.drawable.ic_cancelled_notification_icon, "Cancel", intent).build();
+
+        return new Notification.Builder(context,NotificationCreator.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_download_notification_icon) //Create animation list https://stackoverflow.com/questions/34037962/how-to-animate-the-progress-notification-icon
                 .setContentTitle(title)
                 .setContentText(description)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
-                .setContentIntent(createIntent())
+                .setContentIntent(createIntent(context))
                 .setColorized(true)
-                .setColor(mContext.getResources().getColor(R.color.dark_red))
+                .setColor(context.getResources().getColor(R.color.dark_red,null))
                 .setProgress(100,progress,false)
+                .addAction(action)
                 .build();
-        return notification;
     }
 
-    public static void notifyDownloadProgress(int id, String title, String description, int progress){
+    public static void notifyDownloadProgress(Context context, int id, String title, String description, int progress){
         if(notificationManager == null){
             Log.e(TAG, "notifyDownloadProgress: Notification Manager is not Created");
             return;
         }
         try{
-            NotificationCreator.notificationManager.notify(id, createDownloadProgressNotification(title,description,progress));
+            NotificationCreator.notificationManager.notify(id, createDownloadProgressNotification(context,id,title,description,progress));
         }catch (Exception e){
             Log.e(TAG, "notifyDownloadProgress: ", e);
         }
     }
 
-    public static Notification createDownloadNotification(String title, String description){
+    public static Notification createDownloadNotification(Context context, String title, String description){
         if(notificationManager == null){
             Log.e(TAG, "createDownloadNotification: Notification Manager is not Created");
             return null;
         }
-        Notification notification = new Notification.Builder(mContext,NotificationCreator.getChannelId())
+        return new Notification.Builder(context,NotificationCreator.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_download_notification_icon) //Create animation list https://stackoverflow.com/questions/34037962/how-to-animate-the-progress-notification-icon
                 .setContentTitle(title)
                 .setContentText(description)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
-                .setContentIntent(createIntent())
+                .setContentIntent(createIntent(context))
                 .setProgress(0,0,true)
                 .setColorized(true)
-                .setColor(mContext.getResources().getColor(R.color.dark_red))
+                .setColor(context.getResources().getColor(R.color.dark_red,null))
                 .build();
-        return notification;
     }
 
-    public static void notifyDownload(int id, String title, String description){
+    public static void notifyDownload(Context context, int id, String title, String description){
         if(notificationManager == null){
             Log.e(TAG, "notifyDownload: Notification Manager is not Created");
             return;
         }
         try {
-            NotificationCreator.notificationManager.notify(id, createDownloadNotification(title,description));
+            NotificationCreator.notificationManager.notify(id, createDownloadNotification(context,title,description));
         }catch (Exception e){
             Log.e(TAG, "notifyDownload: ", e);
         }
     }
 
-    public static Notification createCanceledNotification(String title, String description){
+    public static Notification createCanceledNotification(Context context, String title, String description){
         if(notificationManager == null){
             Log.e(TAG, "createCanceledNotification: Notification Manager is not Created");
             return null;
         }
-        Notification notification = new Notification.Builder(mContext,NotificationCreator.getChannelId())
+        return new Notification.Builder(context,NotificationCreator.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_cancelled_notification_icon) //Create Cancelled Icon
                 .setContentTitle(title)
                 .setContentText(description)
                 .setOngoing(false)
                 .setAutoCancel(true)
-                .setContentIntent(createIntent())
+                .setContentIntent(createIntent(context))
                 .setOnlyAlertOnce(true)
                 .build();
-        return notification;
     }
 
-    public static void notifyCancel(int id, String title, String description){
+    public static void notifyCancel(Context context, int id, String title, String description){
         if(notificationManager == null){
             Log.e(TAG, "notifyCancel: Notification Manager is not Created");
             return;
         }
         try {
-            NotificationCreator.notificationManager.notify(id, createCanceledNotification(title, description));
+            NotificationCreator.notificationManager.notify(id, createCanceledNotification(context, title, description));
         } catch (Exception e){
             Log.e(TAG, "notifyCancel: ", e);
         }
     }
 
-    public static Notification createFinishedNotification(String title, String description){
+    public static Notification createFinishedNotification(Context context, String title, String description){
         if(notificationManager == null){
             Log.e(TAG, "createFinishedNotification: Notification Manager is not Created");
             return null;
         }
-        Notification notification = new Notification.Builder(mContext,NotificationCreator.getChannelId())
+        return new Notification.Builder(context,NotificationCreator.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_done_notification_icon)
                 .setContentTitle(title)
                 .setContentText(description)
                 .setOngoing(false)
                 .setAutoCancel(true)
-                .setContentIntent(createIntent())
+                .setContentIntent(createIntent(context))
                 .setOnlyAlertOnce(true)
                 .build();
-        return notification;
     }
 
-    public static void notifyFinished(int id, String title, String description){
+    public static void notifyFinished(Context context, int id, String title, String description){
         if(notificationManager == null){
             Log.e(TAG, "notifyFinished: Notification Manager is not Created");
             return;
         }
         try{
-            NotificationCreator.notificationManager.notify(id, createFinishedNotification(title,description));
+            NotificationCreator.notificationManager.notify(id, createFinishedNotification(context,title,description));
         }catch(Exception e){
-
+            Log.e(TAG, "notifyFinished: ", e);
         }
     }
 
-    public static Notification createFailedNotification(String title, String description){
+    public static Notification createFailedNotification(Context context, String title, String description){
         if(notificationManager == null){
             Log.e(TAG, "createFailedNotification: Notification Manager is not Created");
             return null;
         }
-        Notification notification = new Notification.Builder(mContext,NotificationCreator.getChannelId())
+        return new Notification.Builder(context,NotificationCreator.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_cancelled_notification_icon) //Create Download Finished Icon
                 .setContentTitle(title)
                 .setContentText(description)
                 .setOngoing(false)
                 .setAutoCancel(true)
-                .setContentIntent(createIntent())
+                .setContentIntent(createIntent(context))
                 .setOnlyAlertOnce(true)
                 .build();
-        return notification;
     }
 
-    public static void notifyFailed(int id, String title, String description){
+    public static void notifyFailed(Context context, int id, String title, String description){
         if(notificationManager == null){
             Log.e(TAG, "notifyFailed: Notification Manager is not Created");
             return;
         }
         try {
-            NotificationCreator.notificationManager.notify(id, createFailedNotification(title,description));
+            NotificationCreator.notificationManager.notify(id, createFailedNotification(context,title,description));
         }catch (Exception e){
             Log.e(TAG, "createDownloadNotification: ", e);
         }
     }
 
-    public static String getChannelId(){
-        return CHANNEL_ID;
+    public static Notification createServiceNotification(Context context, String title, String description){
+        if(serviceNotificationManager == null){
+            Log.e(TAG, "createServiceNotification: Notification Manager is not Created");
+            return null;
+        }
+        return new Notification.Builder(context,NotificationCreator.SERVICE_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_download_notification_icon) //Create App Logo for Notification
+                .setContentTitle(title)
+                .setContentText(description)
+                .setContentIntent(createIntent(context))
+                .setColorized(true)
+                .setColor(context.getResources().getColor(R.color.dark_red,null))
+                .build();
+    }
+
+    public static void notifyServiceRunning(Context context, int id, String title, String description){
+        if(serviceNotificationManager == null){
+            Log.e(TAG, "notifyServiceRunning: Notification Manager is not Created");
+            return;
+        }
+        try {
+            NotificationCreator.serviceNotificationManager.notify(id, createDownloadNotification(context,title,description));
+        }catch (Exception e){
+            Log.e(TAG, "notifyDownload: ", e);
+        }
     }
 }

@@ -2,29 +2,22 @@ package kanarious.musicnow;
 
 import android.annotation.SuppressLint;
 import android.app.DownloadManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
-
 import com.arthenica.ffmpegkit.FFmpegKit;
-import com.arthenica.ffmpegkit.FFmpegSession;
-import com.arthenica.ffmpegkit.FFmpegSessionCompleteCallback;
 import com.arthenica.ffmpegkit.ReturnCode;
 import com.arthenica.ffmpegkit.SessionState;
-
 import java.io.File;
 
 public class DownloadThread extends Thread{
-    private DownloadManager downloadManager;
+    private final DownloadManager downloadManager;
     private final Handler handler;
     private final Context mContext;
-    private YTFile ytFile;
+    private final YTFile ytFile;
     private final int id;
     private final String TAG;
     private long dl_id = -1;
@@ -81,7 +74,7 @@ public class DownloadThread extends Thread{
         Uri uri = Uri.parse(ytFile.getUrl());
         DownloadManager.Request request = new DownloadManager.Request(uri);
         request.setTitle(ytFile.getTitle());
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
         ytFile.setLocation(StorageAccess.getDownloadsFolder());
         //Start Download Manager
@@ -100,7 +93,7 @@ public class DownloadThread extends Thread{
             sendUpdate(PanelUpdates.START);
             //Get Download Progress
             int progress = 0;
-            int new_progress=0;
+            int new_progress;
             sendUpdate(PanelUpdates.PROGRESS, progress);
             boolean isDownloadFinished = false;
             boolean isDownloadSuccessful = false;
@@ -150,7 +143,7 @@ public class DownloadThread extends Thread{
 
             //Perform Post Download Conversions
             if (isDownloadSuccessful) {
-                handler.post(()->sendUpdate(PanelUpdates.META));
+                sendUpdate(PanelUpdates.META);
                 postDownload(ytFile,filename);
                 while(!download_finished){
                     //wait for other multi-threaded processes...
@@ -177,62 +170,59 @@ public class DownloadThread extends Thread{
         //Convert File to MP3
         final String new_filename = filename.replace(".mp4a",".mp3");
         final String cmd = "-y -i "+ytFile.getLocation()+filename+" -vn "+ytFile.getLocation()+new_filename;
-        FFmpegKit.executeAsync(cmd, new FFmpegSessionCompleteCallback() {
-            @Override
-            public void apply(FFmpegSession session) {
-                //Get Status
-                SessionState state = session.getState();
-                ReturnCode returnCode = session.getReturnCode();
-                //Converted File and Embed Album Image
-                if(ReturnCode.isSuccess(returnCode)) {
-                    //delete old file
-                    if (!new File(ytFile.getLocation()+filename).delete()){
-                        Log.w(TAG, "postDownloadApply: failed to delete: "+ytFile.getLocation()+filename);
-                    }
-                    //Edit id3
-                    try {
-                        Id3Editor id3Editor = new Id3Editor(ytFile.getLocation(), new_filename, downloadManager, mContext) {
-                            @Override
-                            protected void onId3EditFinish(String fullFilePath) {
-                                handler.post(() -> new SingleMediaScanner(mContext,new File(fullFilePath)));
-                                sendUpdate(PanelUpdates.FINISH);
-                                download_finished = true;
-                            }
-                        };
-                        id3Editor.setTitle(ytFile.getTitle());
-                        if(ytFile.embedArtist()){
-                            id3Editor.setArtist(ytFile.getArtist());
-                        }
-                        if(ytFile.embedImage()){
-                            id3Editor.setAlbumCover(ytFile.getImageURL());
-                        }
-                        id3Editor.embedData();
-                    } catch (Exception e) {
-                        sendUpdate(PanelUpdates.FAIL);
-                        download_finished = true;
-                        Log.e(TAG, "onReceive: Failed to embed image to " + ytFile.getLocation()+filename+ " : " + e.getMessage());
-                    }
+        FFmpegKit.executeAsync(cmd, session -> {
+            //Get Status
+            SessionState state = session.getState();
+            ReturnCode returnCode = session.getReturnCode();
+            //Converted File and Embed Album Image
+            if(ReturnCode.isSuccess(returnCode)) {
+                //delete old file
+                if (!new File(ytFile.getLocation()+filename).delete()){
+                    Log.w(TAG, "postDownloadApply: failed to delete: "+ytFile.getLocation()+filename);
                 }
-                //Converted File, no album image needed
-                else if (ReturnCode.isSuccess(returnCode)){
-                    handler.post(() -> new SingleMediaScanner(mContext,new File(ytFile.getLocation()+new_filename)));
-                    sendUpdate(PanelUpdates.FINISH);
-                }
-                //Failed to Convert File
-                else{
+                //Edit id3
+                try {
+                    Id3Editor id3Editor = new Id3Editor(ytFile.getLocation(), new_filename, downloadManager, mContext) {
+                        @Override
+                        protected void onId3EditFinish(String fullFilePath) {
+                            handler.post(() -> new SingleMediaScanner(mContext,new File(fullFilePath)));
+                            sendUpdate(PanelUpdates.FINISH);
+                            download_finished = true;
+                        }
+                    };
+                    id3Editor.setTitle(ytFile.getTitle());
+                    if(ytFile.embedArtist()){
+                        id3Editor.setArtist(ytFile.getArtist());
+                    }
+                    if(ytFile.embedImage()){
+                        id3Editor.setAlbumCover(ytFile.getImageURL());
+                    }
+                    id3Editor.embedData();
+                } catch (Exception e) {
                     sendUpdate(PanelUpdates.FAIL);
                     download_finished = true;
+                    Log.e(TAG, "onReceive: Failed to embed image to " + ytFile.getLocation()+filename+ " : " + e.getMessage());
                 }
-                Log.d(TAG, String.format("FFmpeg process exited with state %s and rc %s.%s", state, returnCode, session.getFailStackTrace()));
             }
+            //Converted File, no album image needed
+            else if (ReturnCode.isSuccess(returnCode)){
+                handler.post(() -> new SingleMediaScanner(mContext,new File(ytFile.getLocation()+new_filename)));
+                sendUpdate(PanelUpdates.FINISH);
+            }
+            //Failed to Convert File
+            else{
+                sendUpdate(PanelUpdates.FAIL);
+                download_finished = true;
+            }
+            Log.d(TAG, String.format("FFmpeg process exited with state %s and rc %s.%s", state, returnCode, session.getFailStackTrace()));
         });
     }
 
     private void sendUpdate(PanelUpdates update){
-        PanelUpdates.sendUpdate(update, handler, mContext, download_title, id);
+        PanelUpdates.sendUpdate(update, mContext, download_title, id);
     }
 
     private void sendUpdate(PanelUpdates update, int progress){
-        PanelUpdates.sendUpdate(update, handler, mContext, download_title, id, progress);
+        PanelUpdates.sendUpdate(update, mContext, download_title, id, progress);
     }
 }

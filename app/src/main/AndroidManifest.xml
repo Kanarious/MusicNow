@@ -51,9 +51,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".DownloadService" />
-        <service android:name=".DownloadScheduler"
+        <service android:name=".DownloadForegroundService"
             android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <receiver android:name=".ServiceReceiver" />
     </application>
 
 </manifest>

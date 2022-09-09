@@ -2,7 +2,6 @@ package kanarious.musicnow;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
 
 public enum PanelUpdates {
     FAIL(0),
@@ -25,7 +24,7 @@ public enum PanelUpdates {
         return value;
     }
 
-    protected static void sendUpdate(PanelUpdates update, Handler handler, Context context, String title, int id){
+    protected static void sendUpdate(PanelUpdates update, Context context, String title, int id){
         Intent updateIntent = new Intent(PanelUpdates.PANEL_UPDATE);
         updateIntent.putExtra(PanelUpdates.PANEL_UPDATE,update.getValue());
         updateIntent.putExtra(PanelUpdates.PANEL_ID,id);
@@ -36,28 +35,28 @@ public enum PanelUpdates {
                 break;
             }
             case FINISH:{
-                handler.post(() -> NotificationCreator.notifyFinished(id,title,"Download Finished"));
+                NotificationCreator.notifyFinished(context,id,title,"Download Finished");
                 break;
             }
             case CANCEL:{
-                handler.post(()->NotificationCreator.notifyCancel(id,title,"Download Cancelled"));
+                NotificationCreator.notifyCancel(context,id,title,"Download Cancelled");
                 break;
             }
             case FAIL:{
-                handler.post(() -> NotificationCreator.notifyFailed(id,title,"Download Failed"));
+                NotificationCreator.notifyFailed(context,id,title,"Download Failed");
                 break;
             }
             case META:{
-                handler.post(() -> NotificationCreator.notifyDownload(id,title,"Embedding Data"));
+                NotificationCreator.notifyDownload(context,id,title,"Embedding Data");
                 break;
             }
         }
     }
 
-    protected static void sendUpdate(PanelUpdates update, Handler handler, Context context, String title, int id, int progress){
-        sendUpdate(update, handler, context, title, id);
+    protected static void sendUpdate(PanelUpdates update, Context context, String title, int id, int progress){
+        sendUpdate(update, context, title, id);
         if(update == PanelUpdates.PROGRESS){
-            handler.post(()->NotificationCreator.notifyDownloadProgress(id,title,"Downloading",progress));
+            NotificationCreator.notifyDownloadProgress(context,id,title,"Downloading "+progress+"%",progress);
         }
     }
 }

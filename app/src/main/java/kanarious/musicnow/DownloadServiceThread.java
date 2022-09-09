@@ -2,41 +2,38 @@ package kanarious.musicnow;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
 
 import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
-public abstract class DownloadServiceThread extends Thread{
+public class DownloadServiceThread extends Thread{
     volatile boolean running = true;
-    private ArrayList<DownloadThread> threads;
-    private Handler handler;
-    private Context mContext;
-    private final ReentrantLock threadslock = new ReentrantLock();
+    private final ArrayList<DownloadThread> threads;
+    private final Context mContext;
+    private final ReentrantLock threads_lock = new ReentrantLock();
     private boolean called_stop = false;
     private boolean service_started = false;
 
-    protected abstract void onFinish();
-
-    DownloadServiceThread(Handler handler, Context context){
-        this.handler = handler;
+    DownloadServiceThread(Context context){
         this.mContext = context;
         threads = new ArrayList<>();
     }
 
     public void addThread(DownloadThread thread){
-        threadslock.lock();
+        threads_lock.lock();
         try {
             threads.add(thread);
-            thread.start();
+            if(!thread.isAlive()) {
+                thread.start();
+            }
         }
         finally {
-            threadslock.unlock();
+            threads_lock.unlock();
         }
     }
 
     public void stopThread(int id){
-        threadslock.lock();
+        threads_lock.lock();
         try {
             for(DownloadThread thread:threads){
                 if(thread.threadID()==id){
@@ -45,7 +42,7 @@ public abstract class DownloadServiceThread extends Thread{
                 }
             }
         }finally {
-            threadslock.unlock();
+            threads_lock.unlock();
         }
     }
 
@@ -53,20 +50,36 @@ public abstract class DownloadServiceThread extends Thread{
         this.service_started = true;
     }
 
+    public void cleanUp(){
+        threads_lock.lock();
+        try {
+            if (threads.size() > 0) {
+                for (DownloadThread thread : threads) {
+                    if (thread.isAlive()) {
+                        running = false;
+                    }
+                }
+            }
+        }
+        finally {
+            threads_lock.unlock();
+        }
+    }
+
     @Override
     public void run() {
         //Keep thread running until called to stop
         while(running){
-            threadslock.lock();
+            threads_lock.lock();
             try {
                 if (threads.size() > 0) {
-                    for(int i = 0; i<threads.size()-1; i++){
+                    for(int i = threads.size() - 1; i>=0; i--){
                         DownloadThread thread = threads.get(i);
                         if (!thread.isAlive()) {
                             //Check if Thread finished task properly
                             if (!thread.downloadFinished()) {
                                 //Notify Task Failed
-                                PanelUpdates.sendUpdate(PanelUpdates.FAIL, handler, mContext, thread.getTitle(), thread.threadID());
+                                PanelUpdates.sendUpdate(PanelUpdates.FAIL, mContext, thread.getTitle(), thread.threadID());
                             }
                             //Remove Thread from live list
                             threads.remove(i);
@@ -77,30 +90,15 @@ public abstract class DownloadServiceThread extends Thread{
                     called_stop = true;
                 }
             }finally {
-                threadslock.unlock();
+                threads_lock.unlock();
             }
         }
-
-        //Clean Up
-        threadslock.lock();
-        try {
-            if (threads.size() > 0) {
-                for (DownloadThread thread : threads) {
-                    if (thread.isAlive()) {
-                        running = false;
-                    }
-                }
-            }
-        }finally {
-            threadslock.unlock();
-        }
-        super.run();
     }
 
     private void stopService(){
-        Intent intent = new Intent(DownloadService.DOWNLOAD_SERVICE);
-        intent.putExtra(DownloadService.DOWNLOAD_SERVICE,DownloadService.ACTION_STOP_SERVICE);
-        mContext.sendBroadcast(intent);
+        Intent serviceIntent = new Intent(mContext,DownloadForegroundService.class);
+        serviceIntent.putExtra(DownloadForegroundService.DOWNLOAD_SERVICE,DownloadForegroundService.ACTION_STOP_SERVICE);
+        mContext.startService(serviceIntent);
     }
 
 

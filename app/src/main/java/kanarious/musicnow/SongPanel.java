@@ -1,15 +1,9 @@
 package kanarious.musicnow;
 
-import android.app.DownloadManager;
-import android.app.job.JobInfo;
-import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.PersistableBundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CheckBox;
@@ -18,26 +12,20 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
-import androidx.core.content.ContextCompat;
-
 import com.example.messagesutil.UIMessages;
 
 public abstract class SongPanel {
     private final String TAG;
-    private Context mContext;
-    private View view;
-    private CheckBox artistCheckBox;
-    private CheckBox albumCheckBox;
-    private EditText artistEditText;
-    private EditText titleEditText;
-    private ImageButton imageButton;
-    private ImageButton closePanelBTN;
-    private ProgressBar loadBar;
-    private ImageView albumView;
-    private YTFile ytFile;
-//    private YTDL ytdl;
-    private BroadcastReceiver updates;
+    private final Context mContext;
+    private final View view;
+    private final CheckBox artistCheckBox;
+    private final CheckBox albumCheckBox;
+    private final EditText artistEditText;
+    private final EditText titleEditText;
+    private final ImageButton imageButton;
+    private final ProgressBar loadBar;
+    private final YTFile ytFile;
+    private final BroadcastReceiver updates;
 
     private enum ButtonStates{
         DOWNLOAD,
@@ -48,7 +36,7 @@ public abstract class SongPanel {
     }
 
     private ButtonStates buttonState;
-    private int ID;
+    private final int ID;
     protected abstract void closePanel(SongPanel songPanel);
 
     public SongPanel(Context context, int id, YTFile file){
@@ -66,8 +54,8 @@ public abstract class SongPanel {
         artistCheckBox = view.findViewById(R.id.ArtistCheckBox);
         imageButton = view.findViewById(R.id.ImageButton);
         loadBar = view.findViewById(R.id.LoadBar);
-        albumView = view.findViewById(R.id.AlbumView);
-        closePanelBTN = view.findViewById(R.id.ClosePanelBTN);
+        ImageView albumView = view.findViewById(R.id.AlbumView);
+        ImageButton closePanelBTN = view.findViewById(R.id.ClosePanelBTN);
 
         //Create Broadcast Receiver
         updates = new BroadcastReceiver() {
@@ -113,12 +101,12 @@ public abstract class SongPanel {
                 case DONE: {
                     setButtonState(ButtonStates.LOAD);
                     prepYTFile();
-                    startService(ytFile);
+                    startDownload(ytFile);
                     break;
                 }
                 case CANCEL:{
                     setButtonState(ButtonStates.LOAD);
-                    stopService();
+                    stopDownload();
                     break;
                 }
                 default: break;
@@ -247,41 +235,19 @@ public abstract class SongPanel {
 
     }
 
-    public void destroyNotification(){
-        if(this.buttonState == ButtonStates.LOAD){
-            NotificationCreator.notifyCancel(ID,"Couldn't Finish","App Closed");
-        }
+    private void startDownload(YTFile ytFile){
+        Intent serviceIntent = new Intent(mContext,DownloadForegroundService.class);
+        serviceIntent.putExtra(DownloadForegroundService.DOWNLOAD_SERVICE,DownloadForegroundService.ACTION_START_THREAD);
+        serviceIntent.putExtra(DownloadForegroundService.YTFILE,ytFile.toString());
+        serviceIntent.putExtra(DownloadForegroundService.PANEL_ID,this.ID);
+        mContext.startService(serviceIntent);
     }
 
-    private void startService(YTFile ytFile){
-//        Intent serviceIntent = new Intent(mContext,DownloadService.class);
-//        serviceIntent.putExtra(Intent.EXTRA_TEXT,ytFile.toString());
-//        serviceIntent.putExtra(Intent.EXTRA_COMPONENT_NAME,this.ID);
-////        mContext.startService(serviceIntent);
-//        ContextCompat.startForegroundService(mContext,serviceIntent);
-
-        Intent intent = new Intent(DownloadScheduler.DOWNLOAD_SERVICE);
-        intent.putExtra(DownloadScheduler.DOWNLOAD_SERVICE,DownloadScheduler.ACTION_DOWNLOAD_YTFILE);
-        intent.putExtra(DownloadScheduler.YTFILE, ytFile.toString());
-        intent.putExtra(DownloadScheduler.THREAD_ID,this.ID);
-        mContext.sendBroadcast(intent);
-
-    }
-
-    private void stopService(){
-//        Intent intent = new Intent(DownloadService.DOWNLOAD_SERVICE);
-//        intent.putExtra(DownloadService.DOWNLOAD_SERVICE,DownloadService.ACTION_STOP_THREAD);
-//        intent.putExtra(DownloadService.THREAD_ID,this.ID);
-//        mContext.sendBroadcast(intent);
-
-        Intent intent = new Intent(DownloadScheduler.DOWNLOAD_SERVICE);
-        intent.putExtra(DownloadScheduler.DOWNLOAD_SERVICE,DownloadScheduler.ACTION_STOP_THREAD);
-        intent.putExtra(DownloadScheduler.THREAD_ID,this.ID);
-        mContext.sendBroadcast(intent);
-
-//        JobScheduler scheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-//        scheduler.cancel(this.ID);
-//        Log.d(TAG, "stopService: Job Cancelled");
+    private void stopDownload(){
+        Intent serviceIntent = new Intent(mContext,DownloadForegroundService.class);
+        serviceIntent.putExtra(DownloadForegroundService.DOWNLOAD_SERVICE,DownloadForegroundService.ACTION_STOP_THREAD);
+        serviceIntent.putExtra(DownloadForegroundService.PANEL_ID,this.ID);
+        mContext.startService(serviceIntent);
     }
 
 
