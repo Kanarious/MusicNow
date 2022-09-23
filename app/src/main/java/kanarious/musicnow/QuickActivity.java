@@ -183,9 +183,7 @@ public class QuickActivity extends AppCompatActivity {
         if(SettingsController.autoExtractArtist()){
             songPanel.extractArtist();
         }
-        if(SettingsController.autoCropAlbumCover()){
-            songPanel.cropImage();
-        }
+        songPanel.setAutoCrop(SettingsController.autoCropAlbumCover());
         //Get View & Set Transition
         View songPanelView = songPanel.getView();
         Transition t = TransitionInflater.from(mContext).inflateTransition(R.transition.song_panel_trans);

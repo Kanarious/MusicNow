@@ -1,5 +1,6 @@
 package kanarious.musicnow;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -7,9 +8,12 @@ import android.util.Log;
 import android.widget.ImageView;
 import java.io.InputStream;
 
-public class displayImageTask extends AsyncTask {
+public abstract class displayImageTask extends AsyncTask {
     private final String TAG = "displayImageTask";
-    private ImageView view;
+    @SuppressLint("StaticFieldLeak")
+    private final ImageView view;
+
+    protected abstract void displayFinished(Bitmap bm);
 
     public displayImageTask(ImageView view){
         this.view = view;
@@ -30,7 +34,9 @@ public class displayImageTask extends AsyncTask {
 
     @Override
     protected void onPostExecute(Object o) {
-        super.onPostExecute(o);
-        view.setImageBitmap((Bitmap) o);
+//        super.onPostExecute(o);
+        Bitmap bm = (Bitmap) o;
+        view.setImageBitmap(bm);
+        displayFinished(bm);
     }
 }

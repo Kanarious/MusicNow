@@ -1,9 +1,18 @@
 package kanarious.musicnow;
 
+import static java.lang.Math.round;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CheckBox;
@@ -12,6 +21,9 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import androidx.core.graphics.drawable.RoundedBitmapDrawable;
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 
 public abstract class SongPanel {
     private final String TAG;
@@ -24,8 +36,14 @@ public abstract class SongPanel {
     private final EditText titleEditText;
     private final ImageButton imageButton;
     private final ProgressBar loadBar;
+    private final ImageView albumView;
     private final YTFile ytFile;
     private final BroadcastReceiver updates;
+    private Bitmap original_cover = null;
+
+    private boolean autocrop = false;
+
+    public void setAutoCrop(boolean crop){ autocrop = crop; }
 
     private enum ButtonStates{
         DOWNLOAD,
@@ -55,7 +73,7 @@ public abstract class SongPanel {
         artistCheckBox = view.findViewById(R.id.ArtistCheckBox);
         imageButton = view.findViewById(R.id.ImageButton);
         loadBar = view.findViewById(R.id.LoadBar);
-        ImageView albumView = view.findViewById(R.id.AlbumView);
+        albumView = view.findViewById(R.id.AlbumView);
         ImageButton closePanelBTN = view.findViewById(R.id.ClosePanelBTN);
 
         //Create Broadcast Receiver
@@ -97,6 +115,10 @@ public abstract class SongPanel {
             artistEditText.setEnabled(checkBox.isChecked());
         });
 
+        albumView.setOnClickListener(v ->{
+            cropImage();
+        });
+
         imageButton.setOnClickListener(v-> {
             switch (buttonState){
                 case DOWNLOAD:
@@ -131,7 +153,15 @@ public abstract class SongPanel {
             }
         });
 
-        new displayImageTask(albumView).execute(file.getImageURL());
+         new displayImageTask(albumView) {
+            @Override
+            protected void displayFinished(Bitmap bm) {
+                original_cover = bm;
+                if(autocrop){
+                    cropImage();
+                }
+            }
+        }.execute(file.getImageURL());
     }
 
     public void destroy(){
@@ -234,7 +264,74 @@ public abstract class SongPanel {
 
     }
 
+    private Bitmap drawableToBitmap (Drawable drawable) {
+        if (drawable instanceof BitmapDrawable) {
+            return ((BitmapDrawable)drawable).getBitmap();
+        }
+
+        int width = drawable.getIntrinsicWidth();
+        width = width > 0 ? width : 1;
+        int height = drawable.getIntrinsicHeight();
+        height = height > 0 ? height : 1;
+
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
+    }
+
     public void cropImage(){
+        if(original_cover == null){
+            Log.e(TAG, "cropImage: No image available for cropping");
+            return;
+        }
+
+        /*LATER OPEN CROPPER TO GET NEW CROPPING COORDINATES, CURRENTLY CROP 1:1 RATIO*/
+
+        Bitmap bm = ((BitmapDrawable)albumView.getDrawable()).getBitmap();
+        //Bitmap width and height are equal therefore undo 1:1 ratio
+        if(bm.getWidth() == bm.getHeight()){
+            bm = original_cover;
+            ytFile.setImageParams(bm.getWidth(),bm.getHeight(),0,0);
+            albumView.setImageBitmap(bm);
+        }
+        //Crop Bitmap to 1:1 Ratio
+        else{
+            float width = bm.getWidth();
+            float height = bm.getHeight();
+            int new_width;
+            int new_height;
+            int x_starting_point;
+            int y_starting_point;
+
+            //Create New Bitmap
+            if(width > height){
+                new_width = (int) height;
+                new_height = (int) height;
+                x_starting_point = round((width - height)/2);
+                y_starting_point = 0;
+            }
+            else{
+                new_height = (int) width;
+                new_width = (int) width;
+                x_starting_point = 0;
+                y_starting_point = round((height - width)/2);
+            }
+            bm = Bitmap.createBitmap(original_cover,x_starting_point,y_starting_point,new_width,new_height);
+
+            //Set New Image Parameters to YTFile
+            ytFile.setImageParams(new_width,new_height,x_starting_point,y_starting_point);
+
+            //Round Out Bitmap for Panel Visuals
+            RoundedBitmapDrawable dr = RoundedBitmapDrawableFactory.create(mContext.getResources(),bm);
+            dr.setCornerRadius(30);
+            bm = drawableToBitmap(dr);
+
+            //Show Bitmap
+            albumView.setImageBitmap(bm);
+        }
 
     }
 

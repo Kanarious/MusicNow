@@ -2,6 +2,8 @@ package kanarious.musicnow;
 
 import android.app.DownloadManager;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 import com.mpatric.mp3agic.ID3v2;
 import com.mpatric.mp3agic.ID3v24Tag;
@@ -12,17 +14,18 @@ import com.mpatric.mp3agic.UnsupportedTagException;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class Id3Editor {
     private final String TAG = "Id3Editor";
-    private DownloadManager downloadManager;
-    private Context context;
-    private String filename;
-    private String filepath;
-    private String fullFilePath;
+    private final DownloadManager downloadManager;
+    private final Context context;
+    private final String filename;
+    private final String filepath;
+    private final String fullFilePath;
     private final String FILE_EXT = ".mp3";
     public static final String TEMP_NAME_ADD = "-ID3TEMP";
 
@@ -34,17 +37,25 @@ public abstract class Id3Editor {
 
     private String Title;
     private String AlbumCover; //Full File Path
+    private int cover_width;
+    private int cover_height;
+    private int cover_x;
+    private int cover_y;
     private String Artist;
 
-    private List<Contents> mContents;
+    private final List<Contents> mContents;
 
     public void setTitle(String title) {
         Title = title;
         mContents.add(Contents.TITLE);
     }
 
-    public void setAlbumCover(String albumCover){
+    public void setAlbumCover(String albumCover, int width, int height, int x, int y){
         AlbumCover = albumCover;
+        cover_width = width;
+        cover_height = height;
+        cover_x = x;
+        cover_y = y;
         mContents.add(Contents.COVER);
     }
 
@@ -72,14 +83,11 @@ public abstract class Id3Editor {
         else{
             throw new Exception("Invalid File, Only mp3 Files allowed");
         }
-        mContents = new ArrayList<Contents>();
+        mContents = new ArrayList<>();
     }
 
     /**
      * Add jpg image to mp3 file ID3 tag using url stream.
-     * @throws InvalidDataException
-     * @throws UnsupportedTagException
-     * @throws IOException
      */
     public void embedData() throws InvalidDataException,
                                             UnsupportedTagException,
@@ -98,6 +106,8 @@ public abstract class Id3Editor {
                 @Override
                 protected void onImageDownloadFinish(String fullFilePath) {
                     try {
+                        //Crop Image
+                        cropImage(fullFilePath);
                         //Embed Contents
                         id3v2Tag.setAlbumImage(getImage(fullFilePath), "image/jpeg");
                         doEmbedData(mp3File, id3v2Tag, new_filename);
@@ -176,5 +186,26 @@ public abstract class Id3Editor {
         }
         inputStream.close();
         return fileBytes;
+    }
+
+    private void cropImage(String fullFilePath){
+        File file = new File(fullFilePath);
+        if(!file.exists()){
+            Log.e(TAG, "cropImage: No Download Image Found");
+            return;
+        }
+
+        Bitmap bm = BitmapFactory.decodeFile(fullFilePath);
+        bm = Bitmap.createBitmap(bm,cover_x,cover_y,cover_width,cover_height);
+        file.delete();
+        try {
+            FileOutputStream out = new FileOutputStream(file);
+            bm.compress(Bitmap.CompressFormat.JPEG, 100, out);
+            out.flush();
+            out.close();
+        }catch (Exception e){
+            Log.e(TAG, "cropImage: ", e);
+        }
+
     }
 }

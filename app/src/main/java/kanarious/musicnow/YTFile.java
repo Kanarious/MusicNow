@@ -34,6 +34,10 @@ public abstract class YTFile {
     private final boolean invalid;
     private final boolean isCopy;
     private boolean isEmpty = false;
+    private int image_width = 0;
+    private int image_height = 0;
+    private int image_x = 0;
+    private int image_y = 0;
 
     private static final String TITLE_KEY = "title";
     private static final String ARTIST_KEY = "artist";
@@ -44,6 +48,10 @@ public abstract class YTFile {
     private static final String EMBED_IMAGE_KEY = "embedImage";
     private static final String EMBED_ARTIST_KEY = "embedArtist";
     private static final String INVALID_KEY = "invalid";
+    private static final String IMAGE_HEIGHT_KEY = "imageHeight";
+    private static final String IMAGE_WIDTH_KEY = "imageWidth";
+    private static final String IMAGE_X_KEY = "ImageX";
+    private static final String IMAGE_Y_KEY = "ImageY";
 
     public String getUrl(){ return this.dlurl; }
     public String getTitle(){ return this.title; }
@@ -61,6 +69,16 @@ public abstract class YTFile {
     public void setEmbedArtist(boolean embed){this.embedArtist = embed; }
     public boolean isInvalid() { return invalid; }
     public boolean isEmpty(){return this.isEmpty; }
+    public int getImageWidth(){return this.image_width; }
+    public int getImageHeight(){return this.image_height; }
+    public int getImageX(){return this.image_x; }
+    public int getImageY(){return this.image_y; }
+    public void setImageParams(int width, int height, int x, int y){
+        this.image_width = width;
+        this.image_height = height;
+        this.image_x = x;
+        this.image_y = y;
+    }
 
     protected abstract void postProcess();
     protected abstract void notifyExtraction(String message);
@@ -92,6 +110,10 @@ public abstract class YTFile {
         this.embedImage = (boolean) json.get(EMBED_IMAGE_KEY);
         this.embedArtist = (boolean) json.get(EMBED_ARTIST_KEY);
         this.invalid = (boolean) json.get(INVALID_KEY);
+        this.image_height = (int) json.get(IMAGE_HEIGHT_KEY);
+        this.image_width = (int) json.get(IMAGE_WIDTH_KEY);
+        this.image_x = (int) json.get(IMAGE_X_KEY);
+        this.image_y = (int) json.get(IMAGE_Y_KEY);
     }
 
     private String processURL(String url){
@@ -206,6 +228,10 @@ public abstract class YTFile {
             json.put(EMBED_IMAGE_KEY,this.embedImage);
             json.put(EMBED_ARTIST_KEY,this.embedArtist);
             json.put(INVALID_KEY,this.invalid);
+            json.put(IMAGE_WIDTH_KEY,this.image_width);
+            json.put(IMAGE_HEIGHT_KEY,this.image_height);
+            json.put(IMAGE_X_KEY,this.image_x);
+            json.put(IMAGE_Y_KEY,this.image_y);
         } catch (JSONException e) {
             e.printStackTrace();
         }

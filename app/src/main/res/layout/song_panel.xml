@@ -30,12 +30,9 @@
                 android:id="@+id/AlbumView"
                 android:layout_width="130dp"
                 android:layout_height="130dp"
-                android:layout_marginLeft="10dp"
+                android:layout_marginStart="10dp"
                 android:layout_marginTop="10dp"
-                android:paddingTop="1dp"
-                android:paddingBottom="1dp"
-                android:paddingRight="1dp"
-                android:paddingLeft="1dp"
+                android:padding="1dp"
                 tools:srcCompat="@tools:sample/avatars"
                 android:background="@drawable/image_border"/>
 
