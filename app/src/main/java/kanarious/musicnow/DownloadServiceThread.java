@@ -55,7 +55,7 @@ public class DownloadServiceThread extends Thread{
             if (threads.size() > 0) {
                 for (DownloadThread thread : threads) {
                     if (thread.isAlive()) {
-                        running = false;
+                        thread.running = false;
                     }
                 }
             }

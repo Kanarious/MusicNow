@@ -14,7 +14,7 @@ import com.arthenica.ffmpegkit.SessionState;
 import java.io.File;
 import org.apache.commons.io.FilenameUtils;
 
-public class DownloadThread extends Thread{
+public abstract class DownloadThread extends Thread{
     private final DownloadManager downloadManager;
     private final Handler handler;
     private final Context mContext;
@@ -30,6 +30,8 @@ public class DownloadThread extends Thread{
     public boolean downloadFinished(){ return download_finished; }
     public int threadID(){ return this.id; }
     public String getTitle(){ return this.download_title; }
+
+    protected abstract void onDownloadFinished();
 
     DownloadThread(DownloadManager downloadManager, Handler handler, Context context, YTFile ytFile, int id){
         this.downloadManager = downloadManager;
@@ -158,6 +160,7 @@ public class DownloadThread extends Thread{
             }
             if(!running){
                 download_finished = true;
+                onDownloadFinished();
                 return;
             }
 
@@ -178,16 +181,18 @@ public class DownloadThread extends Thread{
             }
             //Download Error
             else{
+                Log.d(TAG, "download: Download Error");
                 sendUpdate(PanelUpdates.FAIL);
                 download_finished = true;
-                Log.d(TAG, "download: Download Error");
+                onDownloadFinished();
             }
         }
         //Download Did not Start
         else{
+            Log.d(TAG, "download: Failed to Start Download");
             sendUpdate(PanelUpdates.FAIL);
             download_finished = true;
-            Log.d(TAG, "download: Failed to Start Download");
+            onDownloadFinished();
         }
     }
 
@@ -213,6 +218,7 @@ public class DownloadThread extends Thread{
                             handler.post(() -> new SingleMediaScanner(mContext,new File(fullFilePath)));
                             sendUpdate(PanelUpdates.FINISH);
                             download_finished = true;
+                            onDownloadFinished();
                         }
                     };
                     id3Editor.setTitle(ytFile.getTitle());
@@ -230,6 +236,7 @@ public class DownloadThread extends Thread{
                 } catch (Exception e) {
                     sendUpdate(PanelUpdates.FAIL);
                     download_finished = true;
+                    onDownloadFinished();
                     Log.e(TAG, "onReceive: Failed to embed image to " + ytFile.getLocation()+filename+ " : " + e.getMessage());
                 }
             }
@@ -238,12 +245,14 @@ public class DownloadThread extends Thread{
                 handler.post(() -> new SingleMediaScanner(mContext,new File(ytFile.getLocation()+new_filename)));
                 sendUpdate(PanelUpdates.FINISH);
                 download_finished = true;
+                onDownloadFinished();
             }
             //Failed to Convert File
             else{
                 sendUpdate(PanelUpdates.FAIL);
                 download_failed = true;
                 download_finished = true;
+                onDownloadFinished();
             }
             Log.d(TAG, String.format("FFmpeg process exited with state %s and rc %s.%s", state, returnCode, session.getFailStackTrace()));
         });
@@ -256,4 +265,5 @@ public class DownloadThread extends Thread{
     private void sendUpdate(PanelUpdates update, int progress){
         PanelUpdates.sendUpdate(update, mContext, download_title, id, progress);
     }
+
 }

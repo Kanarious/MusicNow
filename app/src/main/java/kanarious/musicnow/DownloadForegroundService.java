@@ -16,10 +16,13 @@ import androidx.annotation.Nullable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+
 public class DownloadForegroundService extends Service {
     private static final String TAG = "DownloadForegroundService";
+    private static final ArrayList<DownloadThread> threads = new ArrayList<>();
     private final IBinder binder = new LocalBinder();
-    private DownloadServiceThread main;
+    private int lastStartId;
 
     //Intent Filter
     public static String DOWNLOAD_SERVICE = "DOWNLOAD_SERVICE";
@@ -27,20 +30,21 @@ public class DownloadForegroundService extends Service {
     public static String ACTION_STOP_SERVICE = "STOP_SERVICE";
     public static String ACTION_STOP_THREAD = "STOP_THREAD";
     public static String ACTION_START_THREAD = "START_THREAD";
+    public static String ACTION_FINISHED_THREAD = "FINISHED_THREAD";
     //Intent Extras
     public static String YTFILE = "YTFILE";
     public static String PANEL_ID = "PANEL_ID";
-    public static int PANEL_ID_ERROR = -1;
-
+    public static String THREAD_ID = "THREAD_ID";
+    public static int ID_ERROR = -1;
+    
     @Override
     public void onCreate() {
-        main = new DownloadServiceThread(this);
-        main.start();
         super.onCreate();
     }
 
     @Override
     public void onDestroy() {
+        threads.clear();
         super.onDestroy();
     }
 
@@ -53,10 +57,10 @@ public class DownloadForegroundService extends Service {
     }
 
     private void handleIntent(Intent intent, int startId){
+        lastStartId = startId;
         String action = intent.getStringExtra(DOWNLOAD_SERVICE);
         if(action.equals(ACTION_STOP_SERVICE)){
-            main.cleanUp();
-            main.running = false;
+            stopThreads();
             if(stopSelfResult(startId)) {
                 Log.i(TAG, "handleIntent(): ACTION_STOP_SERVICE service stopped");
             }
@@ -65,22 +69,31 @@ public class DownloadForegroundService extends Service {
             }
         }
         else if(action.equals(ACTION_STOP_THREAD)){
-            int id = intent.getIntExtra(PANEL_ID,PANEL_ID_ERROR);
-            if(id != PANEL_ID_ERROR) {
+            int id = intent.getIntExtra(PANEL_ID, ID_ERROR);
+            if(id != ID_ERROR) {
                 Log.i(TAG, "handleIntent: ACTION_STOP_THREAD stopping thread "+id);
-                main.stopThread(id);
+                stopThread(id);
             }
             else{
                 Log.e(TAG, "handleIntent: ACTION_STOP_THREAD no ID found");
             }
         }
         else if(action.equals(ACTION_START_THREAD)){
-            int id = intent.getIntExtra(PANEL_ID,PANEL_ID_ERROR);
+            int id = intent.getIntExtra(PANEL_ID, ID_ERROR);
             String yt_string = intent.getStringExtra(YTFILE);
             try {
                 startThread(yt_string, id);
             }catch (Exception e){
                 Log.e(TAG, "handleIntent: ACTION START_THREAD failed to start thread: ", e);
+            }
+        }
+        else if(action.equals(ACTION_FINISHED_THREAD)){
+            int id = intent.getIntExtra(THREAD_ID, ID_ERROR);
+            if(id == ID_ERROR){
+                Log.e(TAG, "handleIntent: ACTION_FINISHED_THREAD no ID found");
+            }
+            else{
+                removeThread(id);
             }
         }
     }
@@ -99,8 +112,70 @@ public class DownloadForegroundService extends Service {
                 new Handler(Looper.getMainLooper()),
                 this,
                 ytFile,
-                id);
-        main.addThread(thread);
+                id) {
+            @Override
+            protected void onDownloadFinished() {
+                removeThread(id);
+            }
+        };
+        addThread(thread);
+    }
+
+    private void stopThread(int id){
+        for(DownloadThread thread:threads){
+            if(thread.threadID()==id){
+                thread.running = false;
+                removeThread(thread);
+                break;
+            }
+        }
+    }
+
+    private void removeThread(int id){
+        for(DownloadThread thread:threads){
+            if(thread.threadID()==id){
+                threads.remove(thread);
+                checkThreadCount();
+                break;
+            }
+        }
+    }
+
+    private void removeThread(DownloadThread thread){
+        threads.remove(thread);
+        checkThreadCount();
+    }
+
+    private void checkThreadCount(){
+        if(threads.size() == 0){
+            stopService();
+        }
+    }
+
+    private void stopService(){
+        if(stopSelfResult(lastStartId)) {
+            Log.i(TAG, "stopService(): service stopped");
+        }
+        else{
+            Log.e(TAG, "stopService(): service FAILED stopped");
+        }
+    }
+
+    private void stopThreads(){
+        if (threads.size() > 0) {
+            for (DownloadThread thread : threads) {
+                if (thread.isAlive()) {
+                    thread.running = false;
+                }
+            }
+        }
+    }
+
+    private void addThread(DownloadThread thread){
+        threads.add(thread);
+        if(!thread.isAlive()) {
+            thread.start();
+        }
     }
 
     @Nullable
@@ -112,7 +187,6 @@ public class DownloadForegroundService extends Service {
     @Override
     public boolean onUnbind(Intent intent) {
         Log.i(TAG, "onUnbind: Service Unbinded");
-        main.startService();
         return super.onUnbind(intent);
     }
 
