@@ -11,7 +11,6 @@ public class DownloadServiceThread extends Thread{
     private final ArrayList<DownloadThread> threads;
     private final Context mContext;
     private final ReentrantLock threads_lock = new ReentrantLock();
-//    private boolean called_stop = false;
     private boolean service_started = false;
 
     DownloadServiceThread(Context context){
@@ -85,9 +84,8 @@ public class DownloadServiceThread extends Thread{
                             threads.remove(i);
                         }
                     }
-                } else if (/*!called_stop &&*/ service_started) {
+                } else if (service_started) {
                     stopService();
-//                    called_stop = true;
                 }
             }finally {
                 threads_lock.unlock();
