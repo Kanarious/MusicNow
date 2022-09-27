@@ -100,15 +100,22 @@
                         android:inputType="textPersonName"
                         android:text="" />
 
-                    <CheckBox
-                        android:id="@+id/TitleCheckBox"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:checked="true"
-                        android:visibility="invisible"
-                        android:text="" />
-                </LinearLayout>
+                <ImageButton
+                    android:id="@+id/SwapButton"
+                    android:layout_width="40dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginLeft="5dp"
+                    android:layout_marginTop="0dp"
+                    android:layout_marginRight="5dp"
+                    android:layout_marginBottom="0dp"
+                    android:layout_weight="1"
+                    android:checked="true"
+                    android:text=""
+                    android:visibility="visible"
+                    android:scaleType="fitCenter"
+                    android:padding="7dp"
+                    android:src="@drawable/ic_swap_icon" />
+            </LinearLayout>
 
                 <TextView
                     android:id="@+id/ArtistTextView"
@@ -132,7 +139,7 @@
 
                     <CheckBox
                         android:id="@+id/ArtistCheckBox"
-                        android:layout_width="wrap_content"
+                        android:layout_width="50dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:checked="false"

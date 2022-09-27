@@ -38,6 +38,7 @@ public abstract class SongPanel {
     private final ImageButton imageButton;
     private final ProgressBar loadBar;
     private final ImageView albumView;
+    private final ImageButton swapButton;
     private final YTFile ytFile;
     private final BroadcastReceiver updates;
     private Bitmap original_cover = null;
@@ -75,6 +76,7 @@ public abstract class SongPanel {
         imageButton = view.findViewById(R.id.ImageButton);
         loadBar = view.findViewById(R.id.LoadBar);
         albumView = view.findViewById(R.id.AlbumView);
+        swapButton = view.findViewById(R.id.SwapButton);
         ImageButton closePanelBTN = view.findViewById(R.id.ClosePanelBTN);
 
         //Create Broadcast Receiver
@@ -118,6 +120,10 @@ public abstract class SongPanel {
 
         albumView.setOnClickListener(v ->{
             cropImage();
+        });
+
+        swapButton.setOnClickListener(v ->{
+            swapTitleArtist();
         });
 
         imageButton.setOnClickListener(v-> {
@@ -284,6 +290,13 @@ public abstract class SongPanel {
         title = removeTitleExtra(title,"(",")");
 
         titleEditText.setText(title,TextView.BufferType.EDITABLE);
+    }
+
+    private void swapTitleArtist(){
+        String title = titleEditText.getText().toString();
+        String artist = artistEditText.getText().toString();
+        titleEditText.setText(artist,TextView.BufferType.EDITABLE);
+        artistEditText.setText(title,TextView.BufferType.EDITABLE);
     }
 
     private Bitmap drawableToBitmap (Drawable drawable) {
