@@ -11,6 +11,7 @@ public class SettingsActivity extends AppCompatActivity {
     private Switch extractArtistSWT;
     private Switch includeCoverSWT;
     private Switch cropCoverSWT;
+    private Switch removeExtrasSWT;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,12 +24,14 @@ public class SettingsActivity extends AppCompatActivity {
         extractArtistSWT = findViewById(R.id.ExtractArtistSWT);
         includeCoverSWT = findViewById(R.id.IncludeCoverSWT);
         cropCoverSWT = findViewById(R.id.CropCoverSWT);
+        removeExtrasSWT = findViewById(R.id.RemoveExtrasSWT);
 
         //Set View States
         includeArtistSWT.setChecked(SettingsController.includeAlbumCover());
         extractArtistSWT.setChecked(SettingsController.autoExtractArtist());
         includeCoverSWT.setChecked(SettingsController.includeAlbumCover());
         cropCoverSWT.setChecked(SettingsController.autoCropAlbumCover());
+        removeExtrasSWT.setChecked(SettingsController.removeTitleExtras());
 
         //Set onClick listeners
         includeArtistSWT.setOnClickListener(l->{
@@ -42,6 +45,9 @@ public class SettingsActivity extends AppCompatActivity {
         });
         cropCoverSWT.setOnClickListener(l->{
             SettingsController.setAutoCropCover(cropCoverSWT.isChecked());
+        });
+        removeExtrasSWT.setOnClickListener(l->{
+            SettingsController.setRemoveTitleExtras(removeExtrasSWT.isChecked());
         });
     }
 

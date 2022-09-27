@@ -36,7 +36,7 @@ public class DownloadForegroundService extends Service {
     public static String PANEL_ID = "PANEL_ID";
     public static String THREAD_ID = "THREAD_ID";
     public static int ID_ERROR = -1;
-    
+
     @Override
     public void onCreate() {
         super.onCreate();

@@ -2,6 +2,7 @@ package kanarious.musicnow;
 
 import static java.lang.Math.round;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -107,7 +108,7 @@ public abstract class SongPanel {
 
         //Initialize GUI Elements
         setButtonState(ButtonStates.DOWNLOAD);
-        titleEditText.setText(ytFile.getTitle(), TextView.BufferType.EDITABLE);
+        titleEditText.setText(ytFile.getTitle().trim(), TextView.BufferType.EDITABLE);
 
         //Set OnClick Listeners
         artistCheckBox.setOnClickListener(v -> {
@@ -253,15 +254,36 @@ public abstract class SongPanel {
                 start_title_index = start_title_index + 1;
             }while (text.charAt(start_title_index) == ' ');
             //Grab everything before dash for artist
-            String artist = text.substring(0,end_artist_index+1);
+            String artist = text.substring(0,end_artist_index+1).trim();
             //Grab everything after dash for title
-            String title = text.substring(start_title_index);
+            String title = text.substring(start_title_index).trim();
             //Set text
             titleEditText.setText(title, TextView.BufferType.EDITABLE);
             artistEditText.setText(artist, TextView.BufferType.EDITABLE);
         }
+    }
 
+    private String removeTitleExtra(String title, String start_bracket, String end_bracket){
+        if(title.contains(start_bracket) && title.contains(end_bracket)){
+            int start_index = title.indexOf(start_bracket);
+            int end_index = title.indexOf(end_bracket);
+            String extra_text = title.substring(start_index,end_index+1);
+            return title.replace(extra_text,"").trim();
+        }
+        else {
+            return title;
+        }
+    }
 
+    public void removeTitleExtras(){
+        //Get Title Field String
+        String title = titleEditText.getText().toString();
+
+        //Remove Title Extras
+        title = removeTitleExtra(title,"[","]");
+        title = removeTitleExtra(title,"(",")");
+
+        titleEditText.setText(title,TextView.BufferType.EDITABLE);
     }
 
     private Bitmap drawableToBitmap (Drawable drawable) {

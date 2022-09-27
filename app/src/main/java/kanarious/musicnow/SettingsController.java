@@ -15,19 +15,21 @@ import java.io.IOException;
 
 public class SettingsController {
     private static final String TAG = "SettingsController";
-    private static final int version = 0;
+    private static final int version = 1;
     private static final String filename = "settings.json";
     private static final String VERSION_KEY = "version";
     private static final String INCLUDE_ARTIST_KEY = "IncludeArtist";
     private static final String AUTO_EXTRACT_ARTIST_KEY = "ExtractArtist";
     private static final String INCLUDE_COVER_KEY = "IncludeCover";
     private static final String AUTO_CROP_COVER_KEY = "CropCover";
+    private static final String REMOVE_TITLE_EXTRAS_KEY = "RemoveTitleExtras";
 
     private static int read_version = -1;
     private static boolean include_artist = false;
     private static boolean auto_extract_artist = false;
     private static boolean include_cover = false;
     private static boolean auto_crop_cover = false;
+    private static boolean remove_title_extras = false;
 
     private static String getFilePath(Context context){
         return StorageAccess.getFilesFolder(context)+filename;
@@ -41,6 +43,7 @@ public class SettingsController {
         json.put(AUTO_EXTRACT_ARTIST_KEY,auto_extract_artist);
         json.put(INCLUDE_COVER_KEY,include_cover);
         json.put(AUTO_CROP_COVER_KEY,auto_crop_cover);
+        json.put(REMOVE_TITLE_EXTRAS_KEY,remove_title_extras);
 
         File file = new File(getFilePath(context));
         FileWriter fileWriter = new FileWriter(file,false);
@@ -76,6 +79,9 @@ public class SettingsController {
             include_cover = (boolean) json.get(INCLUDE_COVER_KEY);
             auto_crop_cover = (boolean) json.get(AUTO_CROP_COVER_KEY);
         }
+        if(read_version > 0){
+            remove_title_extras = (boolean) json.get(REMOVE_TITLE_EXTRAS_KEY);
+        }
     }
 
     /**
@@ -109,35 +115,23 @@ public class SettingsController {
         }
     }
 
-    public static void setIncludeArtist(boolean value){
-        include_artist = value;
-    }
+    public static void setIncludeArtist(boolean value){ include_artist = value; }
 
-    public static void setAutoExtractArtist(boolean value){
-        auto_extract_artist = value;
-    }
+    public static void setAutoExtractArtist(boolean value){ auto_extract_artist = value; }
 
-    public static void setIncludeAlbumCover(boolean value){
-        include_cover = value;
-    }
+    public static void setIncludeAlbumCover(boolean value){ include_cover = value; }
 
-    public static void setAutoCropCover(boolean value){
-        auto_crop_cover = value;
-    }
+    public static void setAutoCropCover(boolean value){ auto_crop_cover = value; }
 
-    public static boolean includeArtist(){
-        return include_artist;
-    }
+    public static void setRemoveTitleExtras(boolean value){ remove_title_extras = value; }
 
-    public static boolean autoExtractArtist(){
-        return auto_extract_artist;
-    }
+    public static boolean includeArtist(){ return include_artist; }
 
-    public static boolean includeAlbumCover(){
-        return include_cover;
-    }
+    public static boolean autoExtractArtist(){ return auto_extract_artist; }
 
-    public static boolean autoCropAlbumCover(){
-        return auto_crop_cover;
-    }
+    public static boolean includeAlbumCover(){ return include_cover; }
+
+    public static boolean autoCropAlbumCover(){ return auto_crop_cover; }
+
+    public static boolean removeTitleExtras(){ return remove_title_extras;}
 }
