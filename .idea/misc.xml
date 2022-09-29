@@ -5,9 +5,11 @@
       <map>
         <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/drawable/ic_retry_icon_clicked.xml" value="0.2045" />
         <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/drawable/round_panel.xml" value="0.2045" />
-        <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/activity_quick_download.xml" value="0.15104166666666666" />
+        <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/activity_main.xml" value="0.18958333333333333" />
+        <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/activity_quick_download.xml" value="0.375" />
         <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/activity_settings.xml" value="0.375" />
         <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/custom_snackbar.xml" value="0.375" />
+        <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/main_activity.xml" value="0.1671875" />
         <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/main_bar.xml" value="0.15104166666666666" />
         <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/layout/song_panel.xml" value="0.407548125633232" />
         <entry key="..\:/Users/keven/AndroidStudioProjects/MusicNow/app/src/main/res/menu/overflow_menu.xml" value="0.18802083333333333" />

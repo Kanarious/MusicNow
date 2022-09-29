@@ -24,6 +24,19 @@ public class IdTracker {
         }
     }
 
+    public static int getID(int id){
+        //Check if there are any ID's in-use
+        if(currentIds.size() > 0){
+            //Check if desired ID is already in-use
+            if(currentIds.contains(id)){
+                return getID();
+            }
+        }
+        //ID not in use therefore register desired id and return it for use
+        currentIds.add(id);
+        return id;
+    }
+
     public static void freeID(int id){
         if(currentIds.contains(id)){
             int index = currentIds.indexOf(id);
@@ -32,5 +45,9 @@ public class IdTracker {
         }
     }
 
+    public static void clearIDs(){
+        currentIds.clear();
+        freeIds.clear();
+    }
 
 }

@@ -16,11 +16,31 @@ import androidx.annotation.Nullable;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.ArrayList;
 
 public class DownloadForegroundService extends Service {
+
+    public class FileContainer {
+        private final String file;
+        private final int id;
+        private PanelUpdates state;
+
+        public FileContainer(String file, int id){
+            this.file = file;
+            this.id = id;
+            this.state = PanelUpdates.START;
+        }
+
+        public String getFile(){ return file; }
+        public int getId(){ return id; }
+        public PanelUpdates getState() { return state; }
+        public void setState(PanelUpdates state){ this.state = state; }
+    }
+
     private static final String TAG = "DownloadForegroundService";
     private static final ArrayList<DownloadThread> threads = new ArrayList<>();
+    private static final ArrayList<FileContainer> ytfiles = new ArrayList<>();
     private final IBinder binder = new LocalBinder();
     private int lastStartId;
 
@@ -81,6 +101,8 @@ public class DownloadForegroundService extends Service {
         else if(action.equals(ACTION_START_THREAD)){
             int id = intent.getIntExtra(PANEL_ID, ID_ERROR);
             String yt_string = intent.getStringExtra(YTFILE);
+            FileContainer new_file = new FileContainer(yt_string,id);
+            ytfiles.add(new_file);
             try {
                 startThread(yt_string, id);
             }catch (Exception e){
@@ -93,6 +115,7 @@ public class DownloadForegroundService extends Service {
                 Log.e(TAG, "handleIntent: ACTION_FINISHED_THREAD no ID found");
             }
             else{
+                removeFile(id);
                 removeThread(id);
             }
         }
@@ -115,7 +138,13 @@ public class DownloadForegroundService extends Service {
                 id) {
             @Override
             protected void onDownloadFinished() {
+                removeFile(id);
                 removeThread(id);
+            }
+
+            @Override
+            protected void onUpdateState(PanelUpdates state) {
+                updateFileState(id,state);
             }
         };
         addThread(thread);
@@ -125,6 +154,7 @@ public class DownloadForegroundService extends Service {
         for(DownloadThread thread:threads){
             if(thread.threadID()==id){
                 thread.running = false;
+                removeFile(id);
                 removeThread(thread);
                 break;
             }
@@ -152,6 +182,10 @@ public class DownloadForegroundService extends Service {
         }
     }
 
+    private void removeFile(int id){
+        ytfiles.removeIf(container -> container.getId() == id);
+    }
+
     private void stopService(){
         if(stopSelfResult(lastStartId)) {
             Log.i(TAG, "stopService(): service stopped");
@@ -177,6 +211,17 @@ public class DownloadForegroundService extends Service {
             thread.start();
         }
     }
+
+    private void updateFileState(int id, PanelUpdates state){
+        for(FileContainer container:ytfiles){
+            if(container.getId() == id){
+                container.setState(state);
+                return;
+            }
+        }
+    }
+
+    public ArrayList<FileContainer> getYtfiles(){ return ytfiles; }
 
     @Nullable
     @Override

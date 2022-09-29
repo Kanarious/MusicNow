@@ -14,20 +14,28 @@ import android.transition.Transition;
 import android.transition.TransitionInflater;
 import android.transition.TransitionManager;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 
-public class QuickActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity {
 
-    private final String TAG = "QuickActivity";
+    private final String TAG = "MainActivity";
+    private EditText urlEditText;
+    private Button extractButton;
     private YTFile ytFile;
     private Intent prev_intent = null;
     private Context mContext;
@@ -58,12 +66,36 @@ public class QuickActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_quick_download);
+
+        //Initialize
+        setContentView(R.layout.main_activity);
         setSupportActionBar(findViewById(R.id.MusicNowToolbar));
         SettingsController.initializeFile(this);
         NotificationCreator.createNotificationChannel(this,this.getClass());
+
+        //Get Views
         mContext = this;
         mainView = findViewById(R.id.MainView);
+        extractButton = findViewById(R.id.ExtractButton);
+        urlEditText = findViewById(R.id.UrlEditText);
+
+        urlEditText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                // hide virtual keyboard
+                InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(urlEditText.getWindowToken(), 0);
+                // un-focus EditText
+                urlEditText.clearFocus();
+                //Extract Data
+                extractData(urlEditText.getText().toString());
+                return true;
+            }
+            return false;
+        });
+
+        extractButton.setOnClickListener(l->{
+            extractData(urlEditText.getText().toString());
+        });
 
         //Start Service
         Intent intent = new Intent(this, DownloadForegroundService.class);
@@ -91,8 +123,11 @@ public class QuickActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        if(urlEditText.isFocused()){
+            urlEditText.clearFocus();
+        }
         //Hide App if there are any song panels
-        if(panels.size()>0){
+        else if(panels.size()>0){
             moveTaskToBack(true);
         }
         else{
@@ -130,26 +165,36 @@ public class QuickActivity extends AppCompatActivity {
                 intent.getType().equals("text/plain")) {
             //Save Intent
             prev_intent = intent;
-            //Check Permissions
-            if(StorageAccess.checkPermissions(this)){
-                //Extract Youtube Video Data
-                ytFile = new YTFile(this, intent.getStringExtra(Intent.EXTRA_TEXT)) {
-                    @Override
-                    protected void postProcess() {
-                        if(!ytFile.isEmpty()) {
-                            addNewSongPanel(ytFile);
-                        }
-                        else{
-                            showSnackBar("Couldn't Find mp3 Data, try again");
-                        }
-                    }
+            //Get URL
+            String url = intent.getStringExtra(Intent.EXTRA_TEXT);
+            //Place URL in Edit Text
+            urlEditText.setText(url, TextView.BufferType.EDITABLE);
+            extractData(url);
+        }
+    }
 
-                    @Override
-                    protected void notifyExtraction(String message) {
-                        showSnackBar(message);
+    private void extractData(String url){
+        //Check Permissions
+        if(StorageAccess.checkPermissions(this)){
+            //Extract Youtube Video Data
+            ytFile = new YTFile(this, url) {
+                @Override
+                protected void postProcess() {
+                    if(!ytFile.isEmpty()) {
+                        addNewSongPanel(ytFile);
                     }
-                };
-            }
+                    else{
+                        showSnackBar("Couldn't Find mp3 Data, try again");
+                    }
+                }
+                @Override
+                protected void notifyExtraction(String message) {
+                    showSnackBar(message);
+                }
+            };
+        }
+        else{
+            showSnackBar("Permissions Required, Try Again");
         }
     }
 
@@ -241,7 +286,7 @@ public class QuickActivity extends AppCompatActivity {
     }
 
     private void showSnackBar(String message){
-        CustomSnackbar snackBar = new CustomSnackbar(mContext,findViewById(R.id.MainLayout),message);
+        CustomSnackbar snackBar = new CustomSnackbar(mContext,findViewById(R.id.MainView),message);
         if(message.equals("Extracting Data")){
             snackBar.setProgressVisible(true);
         }

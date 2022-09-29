@@ -32,6 +32,7 @@ public abstract class DownloadThread extends Thread{
     public String getTitle(){ return this.download_title; }
 
     protected abstract void onDownloadFinished();
+    protected abstract void onUpdateState(PanelUpdates state);
 
     DownloadThread(DownloadManager downloadManager, Handler handler, Context context, YTFile ytFile, int id){
         this.downloadManager = downloadManager;
@@ -259,10 +260,12 @@ public abstract class DownloadThread extends Thread{
     }
 
     private void sendUpdate(PanelUpdates update){
+        onUpdateState(update);
         PanelUpdates.sendUpdate(update, mContext, download_title, id);
     }
 
     private void sendUpdate(PanelUpdates update, int progress){
+        onUpdateState(update);
         PanelUpdates.sendUpdate(update, mContext, download_title, id, progress);
     }
 

@@ -133,5 +133,5 @@ public class SettingsController {
 
     public static boolean autoCropAlbumCover(){ return auto_crop_cover; }
 
-    public static boolean removeTitleExtras(){ return remove_title_extras;}
+    public static boolean removeTitleExtras(){ return remove_title_extras; }
 }

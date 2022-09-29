@@ -385,6 +385,26 @@ public abstract class SongPanel {
         mContext.startService(serviceIntent);
     }
 
-
+    public void setState(PanelUpdates state){
+        switch (state){
+            case START:{
+                setButtonState(ButtonStates.DOWNLOAD);
+                break;
+            }
+            case META:
+            case PROGRESS:
+            case CANCEL:{
+                setButtonState(ButtonStates.CANCEL);
+                break;
+            }
+            case FINISH:{
+                setButtonState(ButtonStates.DONE);
+            }
+            case FAIL:
+            case ERROR:{
+                setButtonState(ButtonStates.RETRY);
+            }
+        }
+    }
 
 }

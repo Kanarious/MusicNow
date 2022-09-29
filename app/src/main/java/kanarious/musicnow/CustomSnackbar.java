@@ -2,6 +2,8 @@ package kanarious.musicnow;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,7 +44,8 @@ public class CustomSnackbar{
         Snackbar snackbar = Snackbar.make(parent,"",Snackbar.LENGTH_SHORT);
         snackbar.getView().setBackgroundColor(Color.TRANSPARENT);
         Snackbar.SnackbarLayout snackbarLayout = (Snackbar.SnackbarLayout) snackbar.getView();
-        snackbarLayout.setPadding(0,0,0,0);
+        int bottom_padding = Math.round(100 * ((float) mContext.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT)); //Convert DP to Px
+        snackbarLayout.setPadding(0,0,0,bottom_padding);
         snackbarLayout.addView(customSnackView,0);
         snackbar.show();
     }
