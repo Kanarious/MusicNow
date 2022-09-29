@@ -221,7 +221,7 @@ public class NotificationCreator {
             return null;
         }
         return new Notification.Builder(context,NotificationCreator.SERVICE_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_download_notification_icon) //Create App Logo for Notification
+                .setSmallIcon(R.drawable.ic_music_now_icon_solo)
                 .setContentTitle(title)
                 .setContentText(description)
                 .setContentIntent(createIntent(context))
