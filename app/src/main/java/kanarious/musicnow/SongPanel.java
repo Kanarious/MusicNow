@@ -271,10 +271,13 @@ public abstract class SongPanel {
 
     private String removeTitleExtra(String title, String start_bracket, String end_bracket){
         if(title.contains(start_bracket) && title.contains(end_bracket)){
-            int start_index = title.indexOf(start_bracket);
-            int end_index = title.indexOf(end_bracket);
-            String extra_text = title.substring(start_index,end_index+1);
-            return title.replace(extra_text,"").trim();
+            while(title.contains(start_bracket) && title.contains(end_bracket)){
+                int start_index = title.indexOf(start_bracket);
+                int end_index = title.indexOf(end_bracket);
+                String extra_text = title.substring(start_index,end_index+1);
+                title = title.replace(extra_text,"").trim();
+            }
+            return title;
         }
         else {
             return title;
