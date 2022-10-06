@@ -141,7 +141,7 @@ public abstract class Id3Editor {
         }
     }
 
-    private void addContents(ID3v2 id3v2Tag) throws IOException {
+    private void addContents(ID3v2 id3v2Tag) {
         if(mContents.contains(Contents.TITLE)){
             id3v2Tag.setTitle(Title);
             id3v2Tag.setAlbum(Title);
