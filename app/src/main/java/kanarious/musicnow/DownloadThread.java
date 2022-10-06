@@ -108,6 +108,7 @@ public abstract class DownloadThread extends Thread{
             }
         }
         else{
+            ytFile.setLocation(StorageAccess.getDownloadsFolder());
             download_started = true;
         }
 
@@ -198,6 +199,41 @@ public abstract class DownloadThread extends Thread{
     }
 
     private void postDownload(YTFile ytFile, String filename){
+        //.mp3 Check for existing file converted temporary files
+        if(filename.contains(".mp3")){
+            //Edit id3
+            try {
+                Id3Editor id3Editor = new Id3Editor(ytFile.getLocation(), filename, downloadManager, mContext) {
+                    @Override
+                    protected void onId3EditFinish(String fullFilePath) {
+                        handler.post(() -> new SingleMediaScanner(mContext,new File(fullFilePath)));
+                        sendUpdate(PanelUpdates.FINISH);
+                        download_finished = true;
+                        onDownloadFinished();
+                    }
+                };
+                id3Editor.setTitle(ytFile.getTitle());
+                if(ytFile.embedArtist()){
+                    id3Editor.setArtist(ytFile.getArtist());
+                }
+                if(ytFile.embedImage()){
+                    id3Editor.setAlbumCover(ytFile.getImageURL(),
+                            ytFile.getImageWidth(),
+                            ytFile.getImageHeight(),
+                            ytFile.getImageX(),
+                            ytFile.getImageY());
+                }
+                id3Editor.embedData();
+            } catch (Exception e) {
+                sendUpdate(PanelUpdates.FAIL);
+                download_finished = true;
+                onDownloadFinished();
+                Log.e(TAG, "onReceive: Failed to embed image to " + ytFile.getLocation()+filename+ " : " + e.getMessage());
+            }
+            return;
+        }
+
+
         //Convert File to MP3
         final String new_filename = filename.replace(".mp4a",".mp3");
         final String cmd = "-y -i "+ytFile.getLocation()+filename+" -vn "+ytFile.getLocation()+new_filename;
@@ -240,13 +276,6 @@ public abstract class DownloadThread extends Thread{
                     onDownloadFinished();
                     Log.e(TAG, "onReceive: Failed to embed image to " + ytFile.getLocation()+filename+ " : " + e.getMessage());
                 }
-            }
-            //Converted File, no album image needed
-            else if (ReturnCode.isSuccess(returnCode)){
-                handler.post(() -> new SingleMediaScanner(mContext,new File(ytFile.getLocation()+new_filename)));
-                sendUpdate(PanelUpdates.FINISH);
-                download_finished = true;
-                onDownloadFinished();
             }
             //Failed to Convert File
             else{
